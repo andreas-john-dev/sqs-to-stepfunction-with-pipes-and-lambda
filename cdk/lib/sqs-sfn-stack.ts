@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
+import { WorkerFunction } from './constructs/worker-function';
 
 /**
  * The one stack of this repo. It will create all scenarios (P1–P4, L1–L5)
@@ -8,5 +9,7 @@ import { Construct } from 'constructs';
 export class SqsSfnStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    new WorkerFunction(this, 'Worker');
   }
 }

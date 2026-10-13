@@ -5,8 +5,8 @@ Details and acceptance criteria: [plan.md](plan.md)
 ## Phase 1: Foundation
 - [x] Task 1: Worker logic in Python with unit tests
 - [x] Task 2: Scenario config and queues construct, with CDK test setup
-- [ ] Task 3: Worker Lambda construct
-- [ ] Checkpoint: tests, build and synth pass
+- [x] Task 3: Worker Lambda construct
+- [x] Checkpoint: tests, build and synth pass
 
 ## Phase 2: Workflows
 - [ ] Task 4: `express-single` workflow, first deployable slice

@@ -50,11 +50,11 @@ scenarios.ts ──► ScenarioQueues construct ─────┘
 
 - [x] Task 1: Worker logic in Python with unit tests
 - [x] Task 2: Scenario config and queues construct, with CDK test setup
-- [ ] Task 3: Worker Lambda construct (PythonFunction, Python 3.14)
+- [x] Task 3: Worker Lambda construct (PythonFunction, Python 3.14)
 
 ### Checkpoint: Foundation
-- [ ] `pytest` passes, `npm test` and `npm run build` pass in `cdk/`
-- [ ] `npx cdk synth` works (with Docker bundling)
+- [x] `pytest` passes, `npm test` and `npm run build` pass in `cdk/`
+- [x] `npx cdk synth` works (with Docker bundling)
 
 ### Phase 2: Workflows
 
