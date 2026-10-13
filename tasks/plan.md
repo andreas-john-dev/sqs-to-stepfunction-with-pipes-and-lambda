@@ -41,7 +41,7 @@ queues and the worker already exist and are deployed.
 
 ## Task List
 
-- [ ] Task 1: Pipe construct with tests
+- [x] Task 1: Pipe construct with tests
 - [ ] Task 2: Stack creates a pipe for P1–P4
 - [ ] Task 3: `send_messages.py` and `inspect_queues.py`
 - [ ] Checkpoint: tests, build, synth; review with human
@@ -55,10 +55,10 @@ queues and the worker already exist and are deployed.
 from a scenario's source queue to its state machine.
 
 **Acceptance criteria:**
-- [ ] Source parameters: batch size and batching window from the scenario
-- [ ] Target: `FIRE_AND_FORGET` for async, `REQUEST_RESPONSE` for sync
-- [ ] Pipe role may start the state machine (sync or async API) and read the queue
-- [ ] Log configuration at level ERROR
+- [x] Source parameters: batch size and batching window from the scenario
+- [x] Target: `FIRE_AND_FORGET` for async, `REQUEST_RESPONSE` for sync
+- [x] Pipe role may start the state machine (sync or async API) and read the queue
+- [x] Log configuration at level ERROR
 
 **Verification:** `npm test`, `npm run build`
 
@@ -141,6 +141,6 @@ in P3 (e.g. 30 s).
 
 ## Status
 
-Plan approved, build not started yet. Next: `/agent-skills:build` Task 1.
+Plan approved. Task 1 done (pipe construct). Next: `/agent-skills:build` Task 2.
 Stack is deployed in eu-central-1 with all 9 scenarios (no pipes, no
 dispatchers). Local commits are not pushed; push only when asked.
