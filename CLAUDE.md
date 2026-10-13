@@ -19,6 +19,9 @@ Schritte" when they are done. Never write the link into a tracked file.
   (`pipe-integration.ts`) and the dispatcher Lambda of L1–L5
   (`dispatcher-function.ts`). All Lambdas use `python-function.ts`.
 - `tasks/`: plan and todo list of the current task (agent-skills `/plan`).
+- `docs/`: overview diagram. Edit `architecture.drawio`, then export it with
+  the draw.io CLI: `/Applications/draw.io.app/Contents/MacOS/draw.io -x -f png
+  -s 2 -b 16 -o docs/architecture.png docs/architecture.drawio`.
 - `src/`: Python 3.14 Lambda code (`worker/`, `dispatcher/`, `common/`). All
   functions share `src/requirements.txt` and are bundled with
   `PythonFunction` from `@aws-cdk/aws-lambda-python-alpha` (needs Docker).
