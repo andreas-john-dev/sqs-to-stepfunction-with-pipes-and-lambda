@@ -1,0 +1,22 @@
+{
+  "name": "sqs-to-step-functions-cdk",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "synth": "cdk synth",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "aws-cdk": "2.1145.0",
+    "tsx": "^4.23.0",
+    "typescript": "~7.0.2"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-lambda-python-alpha": "2.273.0-alpha.0",
+    "aws-cdk-lib": "^2.273.0",
+    "constructs": "^10.5.0"
+  },
+  "private": true
+}

@@ -1,0 +1,14 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# CDK
+cdk/node_modules/
+cdk/cdk.out/
+cdk/.cdk.staging/
+
+# OS / editor
+.DS_Store
+.idea/

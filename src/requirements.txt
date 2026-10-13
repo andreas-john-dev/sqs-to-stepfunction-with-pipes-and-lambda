@@ -1,0 +1,3 @@
+# Runtime dependencies, bundled into every Lambda function.
+aioboto3==15.5.0
+boto3==1.40.61
