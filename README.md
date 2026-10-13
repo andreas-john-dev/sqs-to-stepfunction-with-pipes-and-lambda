@@ -5,7 +5,11 @@ It shows how SQS messages can start a Step Functions workflow, either through
 EventBridge Pipes or through a dispatcher Lambda, and what that means for error
 handling and throughput.
 
-Work in progress: the repo is set up, the scenarios come next.
+![Overview: SQS starts Step Functions through a Pipe or a dispatcher Lambda](docs/architecture.png)
+
+The stack has nine scenarios side by side: four with a Pipe (P1–P4) and five
+with a dispatcher Lambda (L1–L5). Red dashed lines in the diagram show where a
+failed message ends up.
 
 ## Layout
 
@@ -15,7 +19,7 @@ Work in progress: the repo is set up, the scenarios come next.
 | `src/` | Python code for the Lambda functions |
 | `tests/` | Unit tests for the Python code |
 | `scripts/` | Scripts to send test messages and inspect queues |
-| `docs/` | Diagrams |
+| `docs/` | Overview diagram (`architecture.drawio`, exported as PNG) |
 
 ## Requirements
 
@@ -44,6 +48,7 @@ pytest                    # Python unit tests (repo root)
 # with the stack deployed:
 python scripts/send_messages.py --scenario P4 ok fail transient slow:30   # one message per case
 python scripts/inspect_queues.py --scenario P4 --minutes 30              # queues, pipe, executions
+python scripts/measure_executions.py --scenario P3 --since 18:06:30          # Express runs per second
 python scripts/smoke_workflows.py   # start the 4 workflow types directly
 
 cd cdk
