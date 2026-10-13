@@ -44,7 +44,7 @@ queues and the worker already exist and are deployed.
 - [x] Task 1: Pipe construct with tests
 - [x] Task 2: Stack creates a pipe for P1–P4
 - [x] Task 3: `send_messages.py` and `inspect_queues.py`
-- [ ] Checkpoint: tests, build, synth; review with human
+- [x] Checkpoint: tests, build, synth; review with human
 - [ ] Task 4: Deploy (after approval), run P1–P4, record the results
 
 ---
@@ -142,6 +142,8 @@ in P3 (e.g. 30 s).
 ## Status
 
 Plan approved. Tasks 1–3 done (pipe construct, wired into the stack, test
-scripts; pipes not deployed). Next: checkpoint and review with human.
+scripts; pipes not deployed). Checkpoint done: review found 2 important
+points, 3 suggestions, 2 nits, all fixed. Next: Task 4 (cdk diff, deploy
+after approval).
 Stack is deployed in eu-central-1 with all 9 scenarios (no pipes, no
 dispatchers). Local commits are not pushed; push only when asked.
