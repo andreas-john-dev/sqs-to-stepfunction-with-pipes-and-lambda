@@ -132,8 +132,15 @@ in P3 (e.g. 30 s).
 | `transient` in P3 needs 3 SQS receives with 6 min visibility timeout | Med (slow test loop) | for the experiment, set the visibility timeout lower via the scenario config, or wait; decide in Task 4 |
 | Pipe retries a failed sync batch as a whole | Med | that is what the experiment should show; record it |
 
-## Open Questions
+## Decisions (approved 2026-10-13)
 
-- Alpha modules or `CfnPipe`? Proposal above: alpha.
-- Visibility timeout of P3/P4 for the test runs: keep 6 min (realistic, slow
-  to test `transient` and DLQ) or lower it for the experiments?
+- Alpha modules (`aws-pipes-alpha`, `-sources-alpha`, `-targets-alpha`),
+  exact pin 2.273.0-alpha.0.
+- Visibility timeout of P3/P4 stays 6 min for the test runs (realistic).
+  Send the test cases in parallel instead of one after the other.
+
+## Status
+
+Plan approved, build not started yet. Next: `/agent-skills:build` Task 1.
+Stack is deployed in eu-central-1 with all 9 scenarios (no pipes, no
+dispatchers). Local commits are not pushed; push only when asked.
