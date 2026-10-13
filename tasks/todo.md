@@ -10,7 +10,7 @@ Details and acceptance criteria: [plan.md](plan.md)
 
 ## Phase 2: Workflows
 - [x] Task 4: `express-single` workflow, first deployable slice
-- [ ] Task 5: `standard-single` workflow
+- [x] Task 5: `standard-single` workflow
 - [ ] Task 6: `express-batch` workflow
 - [ ] Task 7: `standard-batch` workflow
 - [ ] Checkpoint: review with human
