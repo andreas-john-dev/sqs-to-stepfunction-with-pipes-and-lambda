@@ -1,269 +1,139 @@
-# Implementation Plan: Shared constructs (queues, workflows, worker)
+# Implementation Plan: Pipe scenarios P1–P4
 
 Spec: the private plan doc (German, link in `CLAUDE.local.md`), sections
-"Szenario-Matrix", "Architektur", "Workflows", "Python-Code" and
-"Fehlerbehandlung".
+"Szenario-Matrix", "Fehler im Workflow behandeln oder scheitern lassen?",
+"Fehlerbehandlung" and "Offene Punkte".
 
 ## Overview
 
-Build the parts that all 9 scenarios share: the worker Lambda, the queues per
-scenario and the four workflow factories (`standard-single`, `standard-batch`,
-`express-single`, `express-batch`). Pipes (P1–P4) and dispatcher Lambdas
-(L1–L5) are out of scope; they come in the next tasks. At the end the stack
-deploys queues and state machines for every scenario, and each state machine
-can be started by hand with a sample SQS record.
+Connect the source queue of P1–P4 to its workflow with an EventBridge Pipe,
+then send real messages through it and record what happens. The workflows,
+queues and the worker already exist and are deployed.
+
+## What the AWS docs already answer
+
+- A pipe sends a JSON array to Step Functions, even for batch size 1
+  ([batching](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-batching-concurrency.html)).
+  The single workflows already accept that.
+- Partial batch failure for Step Functions targets uses the same payload as
+  Lambda: `{"batchItemFailures": [{"itemIdentifier": "<messageId>"}]}`.
+  `express-batch` already returns it.
+- A pipe execution may run at most 5 minutes, enrichment and target included.
+- The Step Functions target has only `InvocationType`, no execution name
+  ([API reference](https://docs.aws.amazon.com/eventbridge/latest/pipes-reference/API_PipeTargetStateMachineParameters.html)).
+  So no idempotency through the execution name in P1; L1 stays.
 
 ## Architecture Decisions
 
-- **One worker Lambda** for all workflows. It gets one SQS record plus the
-  attempt number and simulates work from `simulate` in the body
-  (`ok`, `fail`, `slow`, `transient`).
-- **Attempt number** = max(`ApproximateReceiveCount`, `RetryCount + 1` from the
-  context object). The workflow passes both values in the task payload, so the
-  worker has no Step Functions dependency.
-- **JSONata** as query language in all state machines. It normalizes the input
-  of the single workflows (record or one-element array) and builds
-  `batchItemFailures` after the Map.
-- **Retry contrast:** only standard workflows retry `TransientError`
-  (3 attempts, backoff) and catch into the error queue. Express workflows have
-  no retry and no catch, so SQS redelivery and the DLQ show up in tests.
-- **Map:** inline Map, `MaxConcurrency` 10.
-- **Express logging:** level ALL with execution data to CloudWatch Logs.
-- **Scenario config** in `scenarios.ts`: integration, workflow type, invocation
-  mode, batch size, batching window, visibility timeout. Context flag
-  `-c scenarios=P3,L4` limits what gets deployed.
-- **CDK tests** with `node:test` + `aws-cdk-lib/assertions`, run through `tsx`.
-  No Jest, no extra dependency. Bundling is skipped in tests
-  (`aws:cdk:bundling-stacks: []`) so they run without Docker.
-
-## Dependency Graph
-
-```
-worker (Python) ──► WorkerFunction construct ──┐
-                                               ├──► 4 workflow factories ──► stack wiring per scenario
-scenarios.ts ──► ScenarioQueues construct ─────┘
-```
+- **CDK L2 alpha modules** `@aws-cdk/aws-pipes-alpha`, `-sources-alpha`,
+  `-targets-alpha`, pinned to the exact version like the Python alpha module.
+  They are marked experimental, but the code reads much better in the post
+  than `CfnPipe` with a hand-written role, and they create the IAM role with
+  the right `states:StartExecution` / `states:StartSyncExecution` rights.
+- **Invocation type from the scenario:** `async` → `FIRE_AND_FORGET`,
+  `sync` → `REQUEST_RESPONSE`. Batch size and batching window from
+  `scenarios.ts`.
+- **Pipe logs** at level ERROR to a log group per pipe, so failed target
+  calls (timeouts, failed executions) show up during the experiments.
+- **Test scripts** `send_messages.py` and `inspect_queues.py` come now, in a
+  first small version, because the pipes can only be checked with real
+  messages. The dispatcher scenarios reuse them later.
 
 ## Task List
 
-### Phase 1: Foundation
-
-- [x] Task 1: Worker logic in Python with unit tests
-- [x] Task 2: Scenario config and queues construct, with CDK test setup
-- [x] Task 3: Worker Lambda construct (PythonFunction, Python 3.14)
-
-### Checkpoint: Foundation
-- [x] `pytest` passes, `npm test` and `npm run build` pass in `cdk/`
-- [x] `npx cdk synth` works (with Docker bundling)
-
-### Phase 2: Workflows
-
-- [x] Task 4: `express-single` workflow, first deployable slice
-- [x] Task 5: `standard-single` workflow with retry and error queue
-- [x] Task 6: `express-batch` workflow with `batchItemFailures`
-- [x] Task 7: `standard-batch` workflow
-
-### Checkpoint: Workflows
-- [x] All tests pass, synth works
-- [x] Review with human before wiring all scenarios
-
-### Phase 3: Wiring
-
-- [ ] Task 8: Stack creates queues and a workflow for each scenario, with the context filter
-
-### Checkpoint: Complete
-- [x] Deploy (after approval), start each workflow type once by hand with
-      `ok`, `fail` and `transient` records
-- [x] Plan doc updated, task ticked off
+- [ ] Task 1: Pipe construct with tests
+- [ ] Task 2: Stack creates a pipe for P1–P4
+- [ ] Task 3: `send_messages.py` and `inspect_queues.py`
+- [ ] Checkpoint: tests, build, synth; review with human
+- [ ] Task 4: Deploy (after approval), run P1–P4, record the results
 
 ---
 
-## Task 1: Worker logic in Python with unit tests
+## Task 1: Pipe construct with tests
 
-**Description:** `worker/process_message.py` takes `{record, attempt}`-style
-input: one SQS record plus `retryCount`. It parses the body with
-`common/sqs_records.py` and acts on `simulate`. Errors are custom exception
-classes, so Step Functions can match them by name (`TransientError`,
-`PermanentError`).
+**Description:** `cdk/lib/constructs/pipe-integration.ts` creates one pipe
+from a scenario's source queue to its state machine.
 
 **Acceptance criteria:**
-- [ ] `ok` returns a result with the `messageId`; `fail` raises `PermanentError`;
-      `slow` sleeps `sleepSeconds` (default from env); `transient` raises
-      `TransientError` while attempt < 3
-- [ ] Attempt = max(`ApproximateReceiveCount`, `retryCount + 1`)
-- [ ] Body without `simulate` counts as `ok`
+- [ ] Source parameters: batch size and batching window from the scenario
+- [ ] Target: `FIRE_AND_FORGET` for async, `REQUEST_RESPONSE` for sync
+- [ ] Pipe role may start the state machine (sync or async API) and read the queue
+- [ ] Log configuration at level ERROR
 
-**Verification:**
-- [ ] `pytest` passes (tests for each case and the attempt logic)
+**Verification:** `npm test`, `npm run build`
 
 **Dependencies:** None
 
-**Files likely touched:** `src/worker/process_message.py`,
-`src/common/sqs_records.py`, `tests/test_process_message.py`,
-`tests/test_sqs_records.py`
+**Files likely touched:** `cdk/lib/constructs/pipe-integration.ts`,
+`cdk/test/pipe-integration.test.ts`, `cdk/package.json`
 
 **Estimated scope:** S
 
-## Task 2: Scenario config and queues construct, with CDK test setup
+## Task 2: Stack creates a pipe for P1–P4
 
-**Description:** `scenarios.ts` lists P1–L5 with their settings from the
-scenario matrix. `ScenarioQueues` creates the source queue, the SQS DLQ
-(`maxReceiveCount` 3) and, for async scenarios, the workflow error queue. Set
-up `npm test` with `node:test` and `tsx`.
+**Description:** `SqsSfnStack` adds the pipe for every selected scenario with
+`integration: 'pipe'`.
 
 **Acceptance criteria:**
-- [ ] 9 scenarios with integration, workflow type, invocation mode, batch size,
-      batching window, visibility timeout
-- [ ] Assertion test: source queue has a redrive policy to the DLQ with
-      `maxReceiveCount` 3; error queue exists only for async scenarios
+- [ ] Without filter: 4 pipes; `-c scenarios=L1,L2`: none
+- [ ] Output per pipe scenario: pipe name
 
-**Verification:**
-- [ ] `npm test` and `npm run build` pass in `cdk/`
-
-**Dependencies:** None
-
-**Files likely touched:** `cdk/lib/scenarios.ts`,
-`cdk/lib/constructs/scenario-queues.ts`, `cdk/test/scenario-queues.test.ts`,
-`cdk/package.json`
-
-**Estimated scope:** M
-
-## Task 3: Worker Lambda construct
-
-**Description:** A small construct (or a function in the stack) that creates
-the worker as `PythonFunction` with `entry` `src/`, handler
-`worker/process_message.handler`, runtime Python 3.14, a timeout that fits
-`slow`.
-
-**Acceptance criteria:**
-- [ ] Assertion test: one Lambda with runtime `python3.14` and the expected handler
-- [ ] `npx cdk synth` bundles `src/` with Docker
-
-**Verification:**
-- [ ] `npm test`, `npm run build`, `npx cdk synth`
+**Verification:** `npm test`, `npm run build`, `npx cdk synth`
 
 **Dependencies:** Task 1
 
-**Files likely touched:** `cdk/lib/constructs/worker-function.ts`,
-`cdk/test/worker-function.test.ts`
+**Files likely touched:** `cdk/lib/sqs-sfn-stack.ts`, `cdk/test/sqs-sfn-stack.test.ts`
 
-**Estimated scope:** S
+**Estimated scope:** XS
 
-## Task 4: `express-single` workflow, first deployable slice
+## Task 3: `send_messages.py` and `inspect_queues.py`
 
-**Description:** Factory in `workflows.ts` for an Express state machine with
-JSONata: normalize input (record or one-element array) → invoke worker → return
-its result. No retry, no catch. Logging level ALL with execution data.
+**Description:** Small CLI scripts on top of the stack outputs.
+`send_messages.py --scenario P4 ok fail transient` sends one message per
+argument (`slow:30` sets `sleepSeconds`). `inspect_queues.py --scenario P4`
+shows the approximate message counts of source queue, DLQ and error queue,
+and the last executions by status.
 
 **Acceptance criteria:**
-- [ ] Assertion test: type EXPRESS, query language JSONata, logging ALL
-- [ ] No `Retry` or `Catch` in the definition
-- [x] By hand (after deploy approval): `aws stepfunctions start-sync-execution`
-      with an `ok` record → SUCCEEDED, with `fail` → FAILED
+- [ ] Message body `{"simulate": ..., "sleepSeconds"?: ...}`, one SendMessageBatch call per 10 messages
+- [ ] Unit tests for building the message bodies (no AWS calls)
 
-**Verification:**
-- [ ] `npm test`, `npm run build`, `npx cdk synth`
+**Verification:** `pytest`
 
-**Dependencies:** Tasks 2, 3
+**Dependencies:** None
 
-**Files likely touched:** `cdk/lib/constructs/workflows.ts`,
-`cdk/test/workflows.test.ts`, `cdk/lib/sqs-sfn-stack.ts`
+**Files likely touched:** `scripts/send_messages.py`, `scripts/inspect_queues.py`,
+`scripts/stack.py` (shared output lookup), `tests/test_send_messages.py`
 
 **Estimated scope:** M
 
-## Task 5: `standard-single` workflow
+## Task 4: Run P1–P4 in AWS
 
-**Description:** Standard state machine: invoke worker with retry on
-`TransientError` (3 attempts, backoff), catch everything else →
-`SendMessage` to the error queue.
-
-**Acceptance criteria:**
-- [ ] Assertion test: type STANDARD, retry on `TransientError` with 3 attempts
-- [ ] Catch sends the record and error to the error queue; role may send to it
-
-**Verification:**
-- [ ] `npm test`, `npm run build`
-
-**Dependencies:** Task 4
-
-**Files likely touched:** `cdk/lib/constructs/workflows.ts`,
-`cdk/test/workflows.test.ts`
-
-**Estimated scope:** S
-
-## Task 6: `express-batch` workflow
-
-**Description:** Express state machine: inline Map over the records
-(`MaxConcurrency` 10), catch per item marks it as failed, then a Pass state
-builds `{"batchItemFailures": [{"itemIdentifier": "<messageId>"}]}`.
+**Description:** After deploy approval, send `ok`, `fail`, `transient` and a
+mixed batch to each pipe scenario, wait, inspect. Then a short `slow` test
+in P3 (e.g. 30 s).
 
 **Acceptance criteria:**
-- [ ] Assertion test: Map with `MaxConcurrency` 10, catch per item
-- [ ] Output has exactly the failed `messageId`s (checked by hand with a mixed
-      batch after deploy)
+- [ ] Results match the expectation table in the doc, or the doc is updated
+      with what really happens
+- [ ] Open points 1, 3, 4 confirmed or corrected with real data
 
-**Verification:**
-- [ ] `npm test`, `npm run build`
+**Verification:** `inspect_queues.py` output per scenario, saved in the doc
 
-**Dependencies:** Task 4
+**Dependencies:** Tasks 2, 3
 
-**Files likely touched:** `cdk/lib/constructs/workflows.ts`,
-`cdk/test/workflows.test.ts`
-
-**Estimated scope:** S
-
-## Task 7: `standard-batch` workflow
-
-**Description:** Standard state machine: inline Map, per item the same retry
-and catch as `standard-single`; other items keep running. Output not used.
-
-**Acceptance criteria:**
-- [ ] Assertion test: Map with retry and catch inside the item processor
-- [ ] Catch sends only the failed item to the error queue
-
-**Verification:**
-- [ ] `npm test`, `npm run build`
-
-**Dependencies:** Task 5
-
-**Files likely touched:** `cdk/lib/constructs/workflows.ts`,
-`cdk/test/workflows.test.ts`
-
-**Estimated scope:** S
-
-## Task 8: Stack wiring per scenario
-
-**Description:** `SqsSfnStack` reads `scenarios.ts` and the context flag
-`scenarios`, and creates queues plus the matching workflow per scenario. Pipes
-and dispatchers are not wired yet. Outputs: queue URLs and state machine ARNs
-per scenario.
-
-**Acceptance criteria:**
-- [ ] Without flag: 9 source queues, 9 state machines, one worker
-- [ ] `-c scenarios=P3,L4`: only those two
-- [ ] Visibility timeout per queue from the config
-
-**Verification:**
-- [ ] `npm test`, `npm run build`, `npx cdk synth`
-
-**Dependencies:** Tasks 2–7
-
-**Files likely touched:** `cdk/lib/sqs-sfn-stack.ts`,
-`cdk/test/sqs-sfn-stack.test.ts`
-
-**Estimated scope:** S
+**Estimated scope:** S (mostly waiting and writing down)
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| JSONata + CDK L2 support for Map, Retry, Catch has gaps | Med | Use `sfn` L2 with `queryLanguage: JSONATA`; fall back to `DefinitionBody.fromString` for single states if needed |
-| Pipe sends an array even for batch size 1 (open point in the doc) | Low | Single workflows accept both shapes |
-| Docker bundling slows tests | Low | Tests skip bundling via context |
+| Alpha API changes in a later CDK version | Low | exact pin; the post names the version |
+| `transient` in P3 needs 3 SQS receives with 6 min visibility timeout | Med (slow test loop) | for the experiment, set the visibility timeout lower via the scenario config, or wait; decide in Task 4 |
+| Pipe retries a failed sync batch as a whole | Med | that is what the experiment should show; record it |
 
 ## Open Questions
 
-- Visibility timeouts per scenario are not yet in the doc as numbers. Proposal:
-  Lambda = 6 × function timeout, pipe = max workflow runtime + buffer
-  (e.g. 5 min for standard, 2 min for express). Settle in Task 2.
-- Deploy for the smoke tests in Tasks 4 and Checkpoint: needs your OK each time.
+- Alpha modules or `CfnPipe`? Proposal above: alpha.
+- Visibility timeout of P3/P4 for the test runs: keep 6 min (realistic, slow
+  to test `transient` and DLQ) or lower it for the experiments?
