@@ -44,11 +44,6 @@ Always `cdk diff` before `cdk deploy`.
 - No ESLint for now: `typescript-eslint` does not support TypeScript 7 yet.
   `tsc` with `strict` is the check.
 
-## Git
-
-- Commit messages must not contain `Co-Authored-By` lines or any other
-  AI attribution.
-
 ## Skills
 
 - `.claude/skills/aws-cdk`: official AWS CDK skill, copied from
