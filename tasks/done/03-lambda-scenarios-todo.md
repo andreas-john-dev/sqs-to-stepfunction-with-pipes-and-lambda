@@ -1,6 +1,6 @@
 # Todo: Lambda scenarios L1–L5
 
-Details and acceptance criteria: [plan.md](plan.md)
+Details and acceptance criteria: [plan.md](03-lambda-scenarios-plan.md)
 
 - [x] Task 1: Shared batch response and the async dispatcher (L1, L2)
 - [x] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
