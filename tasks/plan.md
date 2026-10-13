@@ -47,7 +47,7 @@ wiring, and a test run in AWS like for P1–P4.
 ## Task List
 
 - [x] Task 1: Shared batch response and the async dispatcher (L1, L2)
-- [ ] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
+- [x] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
 - [ ] Task 3: Sync dispatchers L3 and L5, wired into the stack
 - [ ] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
 - [ ] Checkpoint: tests, build, synth; review with human
@@ -82,10 +82,11 @@ dispatcher for one scenario; the stack adds it for every selected Lambda
 scenario. Handlers that do not exist yet make the construct throw.
 
 **Acceptance criteria:**
-- [ ] ESM on the source queue: batch size, window from the scenario, `ReportBatchItemFailures`
-- [ ] Env `STATE_MACHINE_ARN` (and `START_MODE` for L1/L2), timeout 1 min
-- [ ] Role may call `states:StartExecution` (async) or `states:StartSyncExecution` (sync) on its workflow only
-- [ ] Without filter: one dispatcher per wired L scenario; P scenarios get none
+- [x] ESM on the source queue: batch size, window from the scenario, `ReportBatchItemFailures`
+- [x] Env `STATE_MACHINE_ARN` (and `START_MODE` for L1/L2), timeout 1 min
+- [x] Role may call `states:StartExecution` (async) or `states:StartSyncExecution` (sync) on its workflow only
+- [x] Without filter: one dispatcher per wired L scenario; P scenarios get none
+- [x] Output `<id>DispatcherName` (for `aws lambda invoke` and the logs in Task 5)
 
 **Verification:** `npm test`, `npm run build`, `npx cdk synth`
 
@@ -171,5 +172,5 @@ test for L1: invoke the L1 dispatcher twice with the same record
 
 ## Status
 
-Plan approved. Task 1 done (async dispatcher, not wired yet). Next:
-`/agent-skills:build` Task 2.
+Plan approved. Tasks 1–2 done (async dispatcher, wired for L1/L2, not
+deployed). Next: `/agent-skills:build` Task 3.

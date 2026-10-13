@@ -14,6 +14,10 @@ function stateMachineTypes(template: Template): string[] {
     .sort();
 }
 
+function handlers(template: Template): string[] {
+  return Object.values(template.findResources('AWS::Lambda::Function')).map(r => r.Properties.Handler);
+}
+
 describe('SqsSfnStack', () => {
   it('creates a workflow per scenario: 4 Standard, 5 Express', () => {
     const types = stateMachineTypes(synth());
@@ -28,7 +32,22 @@ describe('SqsSfnStack', () => {
   });
 
   it('shares one worker Lambda between all workflows', () => {
-    synth().resourceCountIs('AWS::Lambda::Function', 1);
+    assert.equal(handlers(synth()).filter(h => h.startsWith('worker.')).length, 1);
+  });
+
+  it('starts the workflows of L1 and L2 with a dispatcher Lambda', () => {
+    assert.deepEqual(handlers(synth({ scenarios: 'L1,L2' })).filter(h => h.startsWith('dispatcher.')), [
+      'dispatcher.start_async.handler',
+      'dispatcher.start_async.handler',
+    ]);
+  });
+
+  it('outputs the dispatcher name of a Lambda scenario', () => {
+    assert.ok(Object.keys(synth({ scenarios: 'L1' }).findOutputs('*')).includes('L1DispatcherName'));
+  });
+
+  it('creates no dispatcher for the pipe scenarios', () => {
+    assert.deepEqual(handlers(synth({ scenarios: 'P1,P2,P3,P4' })), ['worker.process_message.handler']);
   });
 
   it('deploys only the scenarios from the context flag', () => {

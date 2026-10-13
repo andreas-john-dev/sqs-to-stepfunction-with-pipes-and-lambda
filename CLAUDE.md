@@ -15,8 +15,9 @@ Schritte" when they are done. Never write the link into a tracked file.
 - `cdk/`: CDK app in TypeScript. `bin/app.ts` creates the one stack
   `lib/sqs-sfn-stack.ts`, which wires the scenarios from `lib/scenarios.ts`
   (filter: `-c scenarios=P3,L4`). `lib/constructs/` holds the queues, the
-  worker, the four workflow factories (`workflows.ts`) and the pipe of
-  P1–P4 (`pipe-integration.ts`). Planned: dispatcher wiring.
+  worker, the four workflow factories (`workflows.ts`), the pipe of P1–P4
+  (`pipe-integration.ts`) and the dispatcher Lambda of L1–L5
+  (`dispatcher-function.ts`). All Lambdas use `python-function.ts`.
 - `tasks/`: plan and todo list of the current task (agent-skills `/plan`).
 - `src/`: Python 3.14 Lambda code (`worker/`, `dispatcher/`, `common/`). All
   functions share `src/requirements.txt` and are bundled with
