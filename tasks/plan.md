@@ -58,7 +58,7 @@ scenarios.ts ──► ScenarioQueues construct ─────┘
 
 ### Phase 2: Workflows
 
-- [ ] Task 4: `express-single` workflow, first deployable slice
+- [x] Task 4: `express-single` workflow, first deployable slice
 - [ ] Task 5: `standard-single` workflow with retry and error queue
 - [ ] Task 6: `express-batch` workflow with `batchItemFailures`
 - [ ] Task 7: `standard-batch` workflow
@@ -158,7 +158,7 @@ its result. No retry, no catch. Logging level ALL with execution data.
 **Acceptance criteria:**
 - [ ] Assertion test: type EXPRESS, query language JSONata, logging ALL
 - [ ] No `Retry` or `Catch` in the definition
-- [ ] By hand (after deploy approval): `aws stepfunctions start-sync-execution`
+- [x] By hand (after deploy approval): `aws stepfunctions start-sync-execution`
       with an `ok` record → SUCCEEDED, with `fail` → FAILED
 
 **Verification:**

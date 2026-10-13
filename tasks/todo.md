@@ -9,7 +9,7 @@ Details and acceptance criteria: [plan.md](plan.md)
 - [x] Checkpoint: tests, build and synth pass
 
 ## Phase 2: Workflows
-- [ ] Task 4: `express-single` workflow, first deployable slice
+- [x] Task 4: `express-single` workflow, first deployable slice
 - [ ] Task 5: `standard-single` workflow
 - [ ] Task 6: `express-batch` workflow
 - [ ] Task 7: `standard-batch` workflow
