@@ -2,9 +2,12 @@ import * as cdk from 'aws-cdk-lib/core';
 import { Template } from 'aws-cdk-lib/assertions';
 
 /** An app that skips Docker bundling, so tests only look at the template. */
+export function testApp(context: Record<string, string> = {}): cdk.App {
+  return new cdk.App({ context: { 'aws:cdk:bundling-stacks': [], ...context } });
+}
+
 export function testStack(): cdk.Stack {
-  const app = new cdk.App({ context: { 'aws:cdk:bundling-stacks': [] } });
-  return new cdk.Stack(app, 'Test');
+  return new cdk.Stack(testApp(), 'Test');
 }
 
 /**

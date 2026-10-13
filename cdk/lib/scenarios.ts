@@ -44,3 +44,20 @@ export const SCENARIOS: readonly ScenarioConfig[] = [
   { id: 'L4', integration: 'lambda', workflow: 'express-single', invocation: 'sync', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
   { id: 'L5', integration: 'lambda', workflow: 'express-batch', invocation: 'sync', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
 ];
+
+/**
+ * The scenarios to deploy. `filter` is the context flag, e.g. `cdk deploy -c scenarios=P3,L4`.
+ * Without a filter, all scenarios are deployed.
+ */
+export function selectScenarios(filter: string | undefined): ScenarioConfig[] {
+  if (!filter) return [...SCENARIOS];
+
+  return filter.split(',').map(raw => {
+    const id = raw.trim();
+    const scenario = SCENARIOS.find(s => s.id === id);
+    if (!scenario) {
+      throw new Error(`Unknown scenario ${id}. Valid: ${SCENARIOS.map(s => s.id).join(', ')}`);
+    }
+    return scenario;
+  });
+}

@@ -3,7 +3,7 @@ import * as assert from 'node:assert/strict';
 import * as cdk from 'aws-cdk-lib/core';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { ScenarioQueues } from '../lib/constructs/scenario-queues';
-import { SCENARIOS, ScenarioConfig } from '../lib/scenarios';
+import { SCENARIOS, ScenarioConfig, selectScenarios } from '../lib/scenarios';
 
 function synth(scenario: ScenarioConfig): Template {
   const stack = new cdk.Stack();
@@ -29,6 +29,20 @@ describe('SCENARIOS', () => {
     for (const s of SCENARIOS) {
       assert.equal(s.invocation === 'async', s.workflow.startsWith('standard'), s.id);
     }
+  });
+});
+
+describe('selectScenarios', () => {
+  it('selects all scenarios without a filter', () => {
+    assert.equal(selectScenarios(undefined).length, 9);
+  });
+
+  it('selects the listed scenarios', () => {
+    assert.deepEqual(selectScenarios('P3, L4').map(s => s.id), ['P3', 'L4']);
+  });
+
+  it('rejects an unknown scenario', () => {
+    assert.throws(() => selectScenarios('P3,X9'), /Unknown scenario X9/);
   });
 });
 

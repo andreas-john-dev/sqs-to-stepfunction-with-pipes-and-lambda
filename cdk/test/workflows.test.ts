@@ -3,6 +3,7 @@ import * as assert from 'node:assert/strict';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import jsonata from 'jsonata';
+import { Construct } from 'constructs';
 import { WorkerFunction } from '../lib/constructs/worker-function';
 import {
   expressBatchWorkflow,
@@ -85,6 +86,21 @@ describe('expressSingleWorkflow', () => {
     synth().hasResourceProperties('AWS::Logs::LogGroup', {
       LogGroupName: Match.stringLikeRegexp('^/aws/vendedlogs/states/'),
     });
+  });
+});
+
+describe('express log groups', () => {
+  it('get a unique name per workflow, also with the same id in different scopes', () => {
+    const stack = testStack();
+    const worker = new WorkerFunction(stack, 'Worker').function;
+    expressSingleWorkflow(new Construct(stack, 'P3'), 'Workflow', { worker });
+    expressSingleWorkflow(new Construct(stack, 'L4'), 'Workflow', { worker });
+
+    const names = Object.values(Template.fromStack(stack).findResources('AWS::Logs::LogGroup'))
+      .map(r => r.Properties.LogGroupName)
+      .filter(name => typeof name === 'string' && name.startsWith('/aws/vendedlogs/'));
+
+    assert.deepEqual(names.sort(), ['/aws/vendedlogs/states/Test-L4-Workflow', '/aws/vendedlogs/states/Test-P3-Workflow']);
   });
 });
 

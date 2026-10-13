@@ -16,5 +16,5 @@ Details and acceptance criteria: [plan.md](plan.md)
 - [ ] Checkpoint: review with human
 
 ## Phase 3: Wiring
-- [ ] Task 8: Stack wiring per scenario
+- [x] Task 8: Stack wiring per scenario
 - [ ] Checkpoint: deploy (after approval) and smoke test by hand

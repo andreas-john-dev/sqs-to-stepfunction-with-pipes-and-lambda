@@ -1,4 +1,4 @@
-import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib/core';
+import { Duration, RemovalPolicy } from 'aws-cdk-lib/core';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -206,11 +206,13 @@ function handleErrors(
  * Express executions keep no history, so they log everything. The
  * /aws/vendedlogs/ prefix keeps the log groups out of the CloudWatch Logs
  * resource policy, which has a size limit and fills up with many workflows.
+ * The name follows the construct path, e.g. SqsToStepFunctions-P3-Workflow.
  */
 function expressLogs(scope: Construct, id: string): sfn.LogOptions {
+  const path = [...scope.node.scopes.map(s => s.node.id).filter(Boolean), id].join('-');
   return {
     destination: new logs.LogGroup(scope, `${id}Logs`, {
-      logGroupName: `/aws/vendedlogs/states/${Stack.of(scope).stackName}-${id}`,
+      logGroupName: `/aws/vendedlogs/states/${path}`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: RemovalPolicy.DESTROY,
     }),
