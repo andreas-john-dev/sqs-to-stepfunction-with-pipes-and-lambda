@@ -2,8 +2,9 @@ import { describe, it } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import jsonata from 'jsonata';
 import { WorkerFunction } from '../lib/constructs/worker-function';
-import { expressSingleWorkflow, standardSingleWorkflow } from '../lib/constructs/workflows';
+import { expressBatchWorkflow, expressSingleWorkflow, standardSingleWorkflow } from '../lib/constructs/workflows';
 import { allStates, definitionOf, onlyStateMachineId, testStack } from './helpers';
 
 describe('expressSingleWorkflow', () => {
@@ -88,5 +89,73 @@ describe('standardSingleWorkflow', () => {
         Statement: Match.arrayWith([Match.objectLike({ Action: 'sqs:SendMessage' })]),
       },
     });
+  });
+});
+
+describe('expressBatchWorkflow', () => {
+  function synth(): Template {
+    const stack = testStack();
+    const worker = new WorkerFunction(stack, 'Worker').function;
+    expressBatchWorkflow(stack, 'Workflow', { worker });
+    return Template.fromStack(stack);
+  }
+
+  function definition() {
+    const template = synth();
+    return definitionOf(template, onlyStateMachineId(template));
+  }
+
+  /** Evaluates a JSONata Output field like Step Functions does, including the JSON round trip. */
+  async function evaluateOutput(field: { Output?: unknown }, input: unknown): Promise<unknown> {
+    const expression = String(field.Output).replace(/^{%/, '').replace(/%}$/, '');
+    const result = await jsonata(expression).evaluate({}, { states: { input } });
+    return JSON.parse(JSON.stringify(result));
+  }
+
+  it('is an Express state machine that logs everything', () => {
+    synth().hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      StateMachineType: 'EXPRESS',
+      LoggingConfiguration: Match.objectLike({ Level: 'ALL', IncludeExecutionData: true }),
+    });
+  });
+
+  it('runs at most 10 records at the same time', () => {
+    const map = Object.values(definition().States).find(s => s.Type === 'Map');
+
+    assert.equal(map?.MaxConcurrency, 10);
+  });
+
+  it('catches every error per record and does not retry', () => {
+    const states = allStates(definition());
+
+    assert.equal(states.ProcessMessage.Retry, undefined);
+    assert.deepEqual(states.ProcessMessage.Catch?.map(c => c.ErrorEquals), [['States.ALL']]);
+  });
+
+  it('returns the failed message IDs as batchItemFailures', async () => {
+    const mapResult = [
+      { messageId: 'a', status: 'ok', attempt: 1 },
+      { messageId: 'b', failed: true },
+      { messageId: 'c', failed: true },
+    ];
+
+    const output = await evaluateOutput(definition().States.BuildBatchResponse, mapResult);
+
+    assert.deepEqual(output, { batchItemFailures: [{ itemIdentifier: 'b' }, { itemIdentifier: 'c' }] });
+  });
+
+  it('returns an empty batchItemFailures list when all records succeed', async () => {
+    const mapResult = [{ messageId: 'a', status: 'ok', attempt: 1 }];
+
+    const output = await evaluateOutput(definition().States.BuildBatchResponse, mapResult);
+
+    assert.deepEqual(output, { batchItemFailures: [] });
+  });
+
+  it('marks a failed record with its message ID', async () => {
+    const [catcher] = allStates(definition()).ProcessMessage.Catch ?? [];
+    const output = await evaluateOutput(catcher, { messageId: 'b', body: '{}' });
+
+    assert.deepEqual(output, { messageId: 'b', failed: true });
   });
 });

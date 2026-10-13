@@ -62,6 +62,41 @@ export function standardSingleWorkflow(scope: Construct, id: string, props: Stan
   });
 }
 
+/**
+ * express-batch (P4, L5): a batch of records, started synchronously.
+ * Each record runs on its own; a failed record does not stop the others.
+ * The output tells SQS which messages failed, so only those come back.
+ */
+export function expressBatchWorkflow(scope: Construct, id: string, props: WorkflowProps): sfn.StateMachine {
+  const processMessage = invokeWorker(scope, `${id}ProcessMessage`, props.worker, '{% $states.input %}');
+  const markFailed = sfn.Pass.jsonata(scope, `${id}MarkFailed`, { stateName: 'MarkFailed' });
+  processMessage.addCatch(markFailed, {
+    errors: [sfn.Errors.ALL],
+    outputs: '{% {"messageId": $states.input.messageId, "failed": true} %}',
+  });
+
+  const processRecords = sfn.Map.jsonata(scope, `${id}ProcessRecords`, {
+    stateName: 'ProcessRecords',
+    maxConcurrency: MAP_CONCURRENCY,
+  }).itemProcessor(processMessage);
+
+  // Partial batch response: https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
+  const buildBatchResponse = sfn.Pass.jsonata(scope, `${id}BuildBatchResponse`, {
+    stateName: 'BuildBatchResponse',
+    outputs: '{% {"batchItemFailures": [$states.input[failed = true].{"itemIdentifier": messageId}]} %}',
+  });
+
+  return new sfn.StateMachine(scope, id, {
+    stateMachineType: sfn.StateMachineType.EXPRESS,
+    queryLanguage: sfn.QueryLanguage.JSONATA,
+    definitionBody: sfn.DefinitionBody.fromChainable(processRecords.next(buildBatchResponse)),
+    logs: expressLogs(scope, id),
+  });
+}
+
+/** Same as the max batch size, so a full batch runs at once. */
+const MAP_CONCURRENCY = 10;
+
 /** 3 attempts in total: the first call and 2 retries. The worker's `transient` succeeds on attempt 3. */
 const TRANSIENT_RETRY: sfn.RetryProps = {
   errors: ['TransientError'],

@@ -43,8 +43,9 @@ export interface StateMachineDefinition {
 export interface State {
   Type: string;
   Retry?: { ErrorEquals: string[]; MaxAttempts?: number }[];
-  Catch?: { ErrorEquals: string[]; Next: string }[];
+  Catch?: { ErrorEquals: string[]; Next: string; Output?: string }[];
   ItemProcessor?: StateMachineDefinition;
   MaxConcurrency?: number;
+  Output?: unknown;
   [key: string]: unknown;
 }
