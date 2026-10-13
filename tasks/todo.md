@@ -3,7 +3,7 @@
 Details and acceptance criteria: [plan.md](plan.md)
 
 ## Phase 1: Foundation
-- [ ] Task 1: Worker logic in Python with unit tests
+- [x] Task 1: Worker logic in Python with unit tests
 - [ ] Task 2: Scenario config and queues construct, with CDK test setup
 - [ ] Task 3: Worker Lambda construct
 - [ ] Checkpoint: tests, build and synth pass
