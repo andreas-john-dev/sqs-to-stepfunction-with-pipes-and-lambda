@@ -19,7 +19,9 @@ Schritte" when they are done. Never write the link into a tracked file.
   functions share `src/requirements.txt` and are bundled with
   `PythonFunction` from `@aws-cdk/aws-lambda-python-alpha` (needs Docker).
 - `tests/`: pytest unit tests. `pyproject.toml` puts `src/` on the path.
-- `scripts/`: send test messages, inspect queues.
+- `scripts/`: `smoke_workflows.py` starts the four workflow types directly
+  (no pipe, no dispatcher) against the deployed stack. Planned: send test
+  messages, inspect queues.
 
 ## Commands
 

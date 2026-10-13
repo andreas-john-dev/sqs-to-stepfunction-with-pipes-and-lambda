@@ -41,6 +41,7 @@ npm ci
 
 ```bash
 pytest                    # Python unit tests (repo root)
+python scripts/smoke_workflows.py   # start the 4 workflow types directly (stack deployed)
 
 cd cdk
 npm test                  # CDK tests
