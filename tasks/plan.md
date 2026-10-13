@@ -64,17 +64,17 @@ scenarios.ts ──► ScenarioQueues construct ─────┘
 - [x] Task 7: `standard-batch` workflow
 
 ### Checkpoint: Workflows
-- [ ] All tests pass, synth works
-- [ ] Review with human before wiring all scenarios
+- [x] All tests pass, synth works
+- [x] Review with human before wiring all scenarios
 
 ### Phase 3: Wiring
 
 - [ ] Task 8: Stack creates queues and a workflow for each scenario, with the context filter
 
 ### Checkpoint: Complete
-- [ ] Deploy (after approval), start each workflow type once by hand with
+- [x] Deploy (after approval), start each workflow type once by hand with
       `ok`, `fail` and `transient` records
-- [ ] Plan doc updated, task ticked off
+- [x] Plan doc updated, task ticked off
 
 ---
 
