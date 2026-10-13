@@ -13,8 +13,11 @@ Schritte" when they are done. Never write the link into a tracked file.
 ## Layout
 
 - `cdk/`: CDK app in TypeScript. `bin/app.ts` creates the one stack
-  `lib/sqs-sfn-stack.ts`. Planned: `lib/scenarios.ts` (scenario config) and
-  `lib/constructs/` (queues, workflow factories, pipe and dispatcher wiring).
+  `lib/sqs-sfn-stack.ts`, which wires the scenarios from `lib/scenarios.ts`
+  (filter: `-c scenarios=P3,L4`). `lib/constructs/` holds the queues, the
+  worker and the four workflow factories (`workflows.ts`). Planned: pipe and
+  dispatcher wiring.
+- `tasks/`: plan and todo list of the current task (agent-skills `/plan`).
 - `src/`: Python 3.14 Lambda code (`worker/`, `dispatcher/`, `common/`). All
   functions share `src/requirements.txt` and are bundled with
   `PythonFunction` from `@aws-cdk/aws-lambda-python-alpha` (needs Docker).
