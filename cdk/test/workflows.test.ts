@@ -4,7 +4,12 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import jsonata from 'jsonata';
 import { WorkerFunction } from '../lib/constructs/worker-function';
-import { expressBatchWorkflow, expressSingleWorkflow, standardSingleWorkflow } from '../lib/constructs/workflows';
+import {
+  expressBatchWorkflow,
+  expressSingleWorkflow,
+  standardBatchWorkflow,
+  standardSingleWorkflow,
+} from '../lib/constructs/workflows';
 import { allStates, definitionOf, onlyStateMachineId, testStack } from './helpers';
 
 describe('expressSingleWorkflow', () => {
@@ -157,5 +162,55 @@ describe('expressBatchWorkflow', () => {
     const output = await evaluateOutput(catcher, { messageId: 'b', body: '{}' });
 
     assert.deepEqual(output, { messageId: 'b', failed: true });
+  });
+});
+
+describe('standardBatchWorkflow', () => {
+  function synth(): Template {
+    const stack = testStack();
+    const worker = new WorkerFunction(stack, 'Worker').function;
+    const errorQueue = new sqs.Queue(stack, 'Errors');
+    standardBatchWorkflow(stack, 'Workflow', { worker, errorQueue });
+    return Template.fromStack(stack);
+  }
+
+  function definition() {
+    const template = synth();
+    return definitionOf(template, onlyStateMachineId(template));
+  }
+
+  it('is a Standard state machine', () => {
+    synth().hasResourceProperties('AWS::StepFunctions::StateMachine', { StateMachineType: 'STANDARD' });
+  });
+
+  it('runs at most 10 records at the same time', () => {
+    const map = Object.values(definition().States).find(s => s.Type === 'Map');
+
+    assert.equal(map?.MaxConcurrency, 10);
+  });
+
+  it('retries TransientError per record, like standard-single', () => {
+    const states = allStates(definition());
+
+    assert.deepEqual(states.ProcessMessage.Retry, [
+      { ErrorEquals: ['TransientError'], IntervalSeconds: 2, MaxAttempts: 2, BackoffRate: 2 },
+    ]);
+  });
+
+  it('sends only the failed record to the error queue', () => {
+    const states = allStates(definition());
+    const [catcher] = states.ProcessMessage.Catch ?? [];
+
+    assert.deepEqual(catcher.ErrorEquals, ['States.ALL']);
+    assert.match(String(states[catcher.Next].Resource), /sqs:sendMessage$/);
+    assert.equal(catcher.Output, '{% {"record": $states.input, "error": $states.errorOutput} %}');
+  });
+
+  it('may send to the error queue', () => {
+    synth().hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([Match.objectLike({ Action: 'sqs:SendMessage' })]),
+      },
+    });
   });
 });

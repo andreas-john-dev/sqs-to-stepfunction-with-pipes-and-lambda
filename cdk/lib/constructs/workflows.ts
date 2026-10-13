@@ -46,20 +46,53 @@ export function expressSingleWorkflow(scope: Construct, id: string, props: Workf
  */
 export function standardSingleWorkflow(scope: Construct, id: string, props: StandardWorkflowProps): sfn.StateMachine {
   const processMessage = invokeWorker(scope, `${id}ProcessMessage`, props.worker, SINGLE_RECORD);
-  const sendToErrorQueue = sendToQueue(scope, `${id}SendToErrorQueue`, props.errorQueue);
-
-  processMessage
-    .addRetry(TRANSIENT_RETRY)
-    .addCatch(sendToErrorQueue, {
-      errors: [sfn.Errors.ALL],
-      outputs: `{% {"record": ${SINGLE_RECORD_EXPR}, "error": $states.errorOutput} %}`,
-    });
+  handleErrors(scope, id, processMessage, props.errorQueue, SINGLE_RECORD_EXPR);
 
   return new sfn.StateMachine(scope, id, {
     stateMachineType: sfn.StateMachineType.STANDARD,
     queryLanguage: sfn.QueryLanguage.JSONATA,
     definitionBody: sfn.DefinitionBody.fromChainable(processMessage),
   });
+}
+
+/**
+ * standard-batch (P2, L2): a batch of records, started asynchronously.
+ * Each record gets the same retry and catch as in standard-single;
+ * a failed record does not stop the others.
+ */
+export function standardBatchWorkflow(scope: Construct, id: string, props: StandardWorkflowProps): sfn.StateMachine {
+  const processMessage = invokeWorker(scope, `${id}ProcessMessage`, props.worker, '{% $states.input %}');
+  handleErrors(scope, id, processMessage, props.errorQueue, '$states.input');
+
+  const processRecords = sfn.Map.jsonata(scope, `${id}ProcessRecords`, {
+    stateName: 'ProcessRecords',
+    maxConcurrency: MAP_CONCURRENCY,
+  }).itemProcessor(processMessage);
+
+  return new sfn.StateMachine(scope, id, {
+    stateMachineType: sfn.StateMachineType.STANDARD,
+    queryLanguage: sfn.QueryLanguage.JSONATA,
+    definitionBody: sfn.DefinitionBody.fromChainable(processRecords),
+  });
+}
+
+/**
+ * Error handling of the standard workflows: retry TransientError, send
+ * everything else with the record to the error queue.
+ */
+function handleErrors(
+  scope: Construct,
+  id: string,
+  processMessage: tasks.LambdaInvoke,
+  errorQueue: sqs.IQueue,
+  recordExpr: string,
+): void {
+  processMessage
+    .addRetry(TRANSIENT_RETRY)
+    .addCatch(sendToQueue(scope, `${id}SendToErrorQueue`, errorQueue), {
+      errors: [sfn.Errors.ALL],
+      outputs: `{% {"record": ${recordExpr}, "error": $states.errorOutput} %}`,
+    });
 }
 
 /**

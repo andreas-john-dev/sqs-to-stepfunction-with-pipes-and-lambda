@@ -61,7 +61,7 @@ scenarios.ts ──► ScenarioQueues construct ─────┘
 - [x] Task 4: `express-single` workflow, first deployable slice
 - [x] Task 5: `standard-single` workflow with retry and error queue
 - [x] Task 6: `express-batch` workflow with `batchItemFailures`
-- [ ] Task 7: `standard-batch` workflow
+- [x] Task 7: `standard-batch` workflow
 
 ### Checkpoint: Workflows
 - [ ] All tests pass, synth works
