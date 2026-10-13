@@ -31,18 +31,32 @@ describe('SqsSfnStack', () => {
     synth().resourceCountIs('AWS::Lambda::Function', 1);
   });
 
+  it('has no pipe name output for dispatcher scenarios', () => {
+    const outputs = Object.keys(synth({ scenarios: 'L1' }).findOutputs('*'));
+
+    assert.ok(!outputs.includes('L1PipeName'));
+  });
+
   it('deploys only the scenarios from the context flag', () => {
     const types = stateMachineTypes(synth({ scenarios: 'P1,L4' }));
 
     assert.deepEqual(types, ['EXPRESS', 'STANDARD']);
   });
 
+  it('connects each pipe scenario to its workflow with a pipe', () => {
+    synth().resourceCountIs('AWS::Pipes::Pipe', 4);
+  });
+
+  it('creates no pipe for the dispatcher scenarios', () => {
+    synth({ scenarios: 'L1,L2' }).resourceCountIs('AWS::Pipes::Pipe', 0);
+  });
+
   it('outputs what the test scripts need per scenario', () => {
     const outputs = Object.keys(synth({ scenarios: 'P1,P3' }).findOutputs('*')).sort();
 
     assert.deepEqual(outputs, [
-      'P1DlqUrl', 'P1ErrorQueueUrl', 'P1SourceQueueUrl', 'P1StateMachineArn',
-      'P3DlqUrl', 'P3SourceQueueUrl', 'P3StateMachineArn',
+      'P1DlqUrl', 'P1ErrorQueueUrl', 'P1PipeName', 'P1SourceQueueUrl', 'P1StateMachineArn',
+      'P3DlqUrl', 'P3PipeName', 'P3SourceQueueUrl', 'P3StateMachineArn',
     ]);
   });
 });

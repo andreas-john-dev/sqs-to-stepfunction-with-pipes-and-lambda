@@ -42,7 +42,7 @@ queues and the worker already exist and are deployed.
 ## Task List
 
 - [x] Task 1: Pipe construct with tests
-- [ ] Task 2: Stack creates a pipe for P1–P4
+- [x] Task 2: Stack creates a pipe for P1–P4
 - [ ] Task 3: `send_messages.py` and `inspect_queues.py`
 - [ ] Checkpoint: tests, build, synth; review with human
 - [ ] Task 4: Deploy (after approval), run P1–P4, record the results
@@ -75,8 +75,8 @@ from a scenario's source queue to its state machine.
 `integration: 'pipe'`.
 
 **Acceptance criteria:**
-- [ ] Without filter: 4 pipes; `-c scenarios=L1,L2`: none
-- [ ] Output per pipe scenario: pipe name
+- [x] Without filter: 4 pipes; `-c scenarios=L1,L2`: none
+- [x] Output per pipe scenario: pipe name
 
 **Verification:** `npm test`, `npm run build`, `npx cdk synth`
 
@@ -141,6 +141,7 @@ in P3 (e.g. 30 s).
 
 ## Status
 
-Plan approved. Task 1 done (pipe construct). Next: `/agent-skills:build` Task 2.
+Plan approved. Tasks 1–2 done (pipe construct, wired into the stack, not
+deployed). Next: `/agent-skills:build` Task 3.
 Stack is deployed in eu-central-1 with all 9 scenarios (no pipes, no
 dispatchers). Local commits are not pushed; push only when asked.
