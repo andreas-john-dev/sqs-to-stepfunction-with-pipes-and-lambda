@@ -13,7 +13,7 @@ Details and acceptance criteria: [plan.md](plan.md)
 - [x] Task 5: `standard-single` workflow
 - [x] Task 6: `express-batch` workflow
 - [x] Task 7: `standard-batch` workflow
-- [ ] Checkpoint: review with human
+- [x] Checkpoint: review with human
 
 ## Phase 3: Wiring
 - [x] Task 8: Stack wiring per scenario
