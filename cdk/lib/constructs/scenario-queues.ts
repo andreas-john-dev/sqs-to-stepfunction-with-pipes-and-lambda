@@ -24,16 +24,19 @@ export class ScenarioQueues extends Construct {
 
     this.dlq = new sqs.Queue(this, 'Dlq', {
       retentionPeriod: Duration.days(14),
+      enforceSSL: true,
     });
 
     this.source = new sqs.Queue(this, 'Source', {
       visibilityTimeout: scenario.visibilityTimeout,
       deadLetterQueue: { queue: this.dlq, maxReceiveCount: 3 },
+      enforceSSL: true,
     });
 
     if (scenario.invocation === 'async') {
       this.errorQueue = new sqs.Queue(this, 'WorkflowErrors', {
         retentionPeriod: Duration.days(14),
+        enforceSSL: true,
       });
     }
   }

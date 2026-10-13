@@ -1,12 +1,10 @@
 import { describe, it } from 'node:test';
-import * as cdk from 'aws-cdk-lib/core';
 import { Template } from 'aws-cdk-lib/assertions';
 import { WorkerFunction } from '../lib/constructs/worker-function';
+import { testStack } from './helpers';
 
 function synth(): Template {
-  // Skip Docker bundling, the tests only look at the template.
-  const app = new cdk.App({ context: { 'aws:cdk:bundling-stacks': [] } });
-  const stack = new cdk.Stack(app, 'Test');
+  const stack = testStack();
   new WorkerFunction(stack, 'Worker');
   return Template.fromStack(stack);
 }
@@ -19,9 +17,9 @@ describe('WorkerFunction', () => {
     });
   });
 
-  it('has a timeout long enough for the slow test', () => {
+  it('may run as long as an Express execution, so the slow test can probe the pipe timeout', () => {
     synth().hasResourceProperties('AWS::Lambda::Function', {
-      Timeout: 60,
+      Timeout: 300,
       Environment: { Variables: { DEFAULT_SLEEP_SECONDS: '10' } },
     });
   });

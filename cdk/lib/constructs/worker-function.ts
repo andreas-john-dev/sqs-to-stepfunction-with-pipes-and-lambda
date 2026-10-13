@@ -25,7 +25,8 @@ export class WorkerFunction extends Construct {
       handler: 'handler',
       runtime: lambda.Runtime.PYTHON_3_14,
       architecture: lambda.Architecture.ARM_64,
-      timeout: Duration.minutes(1),
+      // As long as an Express execution may run, so `slow` can probe how long a pipe waits.
+      timeout: Duration.minutes(5),
       environment: {
         DEFAULT_SLEEP_SECONDS: String(DEFAULT_SLEEP_SECONDS),
       },

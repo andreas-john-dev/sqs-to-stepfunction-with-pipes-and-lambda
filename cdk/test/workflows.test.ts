@@ -12,6 +12,15 @@ import {
 } from '../lib/constructs/workflows';
 import { allStates, definitionOf, onlyStateMachineId, testStack } from './helpers';
 
+/** Evaluates a JSONata field (`{% ... %}`) like Step Functions does, including the JSON round trip. */
+async function evaluate(field: unknown, input: unknown): Promise<unknown> {
+  const expression = String(field).replace(/^{%/, '').replace(/%}$/, '');
+  const result = await jsonata(expression).evaluate({}, { states: { input } });
+  return JSON.parse(JSON.stringify(result));
+}
+
+const RECORD = { messageId: 'm-1', body: '{}' };
+
 describe('expressSingleWorkflow', () => {
   function synth(): Template {
     const stack = testStack();
@@ -50,6 +59,32 @@ describe('expressSingleWorkflow', () => {
 
     assert.ok(task);
     assert.deepEqual(Object.keys((task.Arguments as { Payload: object }).Payload).sort(), ['record', 'retryCount']);
+  });
+
+  function recordArgument(): unknown {
+    const template = synth();
+    const state = definitionOf(template, onlyStateMachineId(template)).States.ProcessMessage;
+    return (state.Arguments as { Payload: { record: unknown } }).Payload.record;
+  }
+
+  it('accepts a single record', async () => {
+    assert.deepEqual(await evaluate(recordArgument(), RECORD), RECORD);
+  });
+
+  it('accepts an array with one record, as a pipe may send it', async () => {
+    assert.deepEqual(await evaluate(recordArgument(), [RECORD]), RECORD);
+  });
+
+  it('fails for more than one record instead of dropping the rest', async () => {
+    await assert.rejects(evaluate(recordArgument(), [RECORD, { messageId: 'm-2', body: '{}' }]), {
+      message: /Expected one record, got 2/,
+    });
+  });
+
+  it('writes its logs to a vended logs group, to stay clear of the resource policy limit', () => {
+    synth().hasResourceProperties('AWS::Logs::LogGroup', {
+      LogGroupName: Match.stringLikeRegexp('^/aws/vendedlogs/states/'),
+    });
   });
 });
 
@@ -110,13 +145,6 @@ describe('expressBatchWorkflow', () => {
     return definitionOf(template, onlyStateMachineId(template));
   }
 
-  /** Evaluates a JSONata Output field like Step Functions does, including the JSON round trip. */
-  async function evaluateOutput(field: { Output?: unknown }, input: unknown): Promise<unknown> {
-    const expression = String(field.Output).replace(/^{%/, '').replace(/%}$/, '');
-    const result = await jsonata(expression).evaluate({}, { states: { input } });
-    return JSON.parse(JSON.stringify(result));
-  }
-
   it('is an Express state machine that logs everything', () => {
     synth().hasResourceProperties('AWS::StepFunctions::StateMachine', {
       StateMachineType: 'EXPRESS',
@@ -144,22 +172,36 @@ describe('expressBatchWorkflow', () => {
       { messageId: 'c', failed: true },
     ];
 
-    const output = await evaluateOutput(definition().States.BuildBatchResponse, mapResult);
+    const output = await evaluate(definition().States.BuildBatchResponse.Output, mapResult);
 
     assert.deepEqual(output, { batchItemFailures: [{ itemIdentifier: 'b' }, { itemIdentifier: 'c' }] });
+  });
+
+  it('returns a list also for exactly one failed record', async () => {
+    const mapResult = [{ messageId: 'b', failed: true }];
+
+    const output = await evaluate(definition().States.BuildBatchResponse.Output, mapResult);
+
+    assert.deepEqual(output, { batchItemFailures: [{ itemIdentifier: 'b' }] });
+  });
+
+  it('writes its logs to a vended logs group', () => {
+    synth().hasResourceProperties('AWS::Logs::LogGroup', {
+      LogGroupName: Match.stringLikeRegexp('^/aws/vendedlogs/states/'),
+    });
   });
 
   it('returns an empty batchItemFailures list when all records succeed', async () => {
     const mapResult = [{ messageId: 'a', status: 'ok', attempt: 1 }];
 
-    const output = await evaluateOutput(definition().States.BuildBatchResponse, mapResult);
+    const output = await evaluate(definition().States.BuildBatchResponse.Output, mapResult);
 
     assert.deepEqual(output, { batchItemFailures: [] });
   });
 
   it('marks a failed record with its message ID', async () => {
     const [catcher] = allStates(definition()).ProcessMessage.Catch ?? [];
-    const output = await evaluateOutput(catcher, { messageId: 'b', body: '{}' });
+    const output = await evaluate(catcher.Output, { messageId: 'b', body: '{}' });
 
     assert.deepEqual(output, { messageId: 'b', failed: true });
   });

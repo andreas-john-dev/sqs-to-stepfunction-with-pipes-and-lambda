@@ -54,6 +54,19 @@ describe('ScenarioQueues', () => {
     });
   });
 
+  it('denies access without TLS on every queue', () => {
+    const template = synth(scenario('P1'));
+
+    template.resourceCountIs('AWS::SQS::QueuePolicy', 3);
+    template.allResourcesProperties('AWS::SQS::QueuePolicy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({ Effect: 'Deny', Condition: { Bool: { 'aws:SecureTransport': 'false' } } }),
+        ]),
+      },
+    });
+  });
+
   it('creates a workflow error queue for async scenarios', () => {
     const template = synth(scenario('P1'));
 
