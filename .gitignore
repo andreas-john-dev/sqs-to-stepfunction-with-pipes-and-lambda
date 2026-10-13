@@ -9,6 +9,9 @@ cdk/node_modules/
 cdk/cdk.out/
 cdk/.cdk.staging/
 
+# Claude Code: local notes, e.g. the link to the private plan doc
+CLAUDE.local.md
+
 # OS / editor
 .DS_Store
 .idea/

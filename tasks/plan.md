@@ -1,8 +1,8 @@
 # Implementation Plan: Shared constructs (queues, workflows, worker)
 
-Spec: the plan doc (German), sections "Szenario-Matrix", "Architektur",
-"Workflows", "Python-Code" and "Fehlerbehandlung":
-https://claude.ai/artifact/EFncuRezwAeczfZ1ph3U5Y
+Spec: the private plan doc (German, link in `CLAUDE.local.md`), sections
+"Szenario-Matrix", "Architektur", "Workflows", "Python-Code" and
+"Fehlerbehandlung".
 
 ## Overview
 

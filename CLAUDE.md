@@ -4,11 +4,11 @@ Companion repo for a blog post: SQS messages start a Step Functions workflow,
 either through EventBridge Pipes (scenarios P1–P4) or through a dispatcher
 Lambda (L1–L5). All scenarios live side by side in one CDK stack.
 
-The plan (German) lives in a Claude doc:
-https://claude.ai/artifact/EFncuRezwAeczfZ1ph3U5Y
-It holds the scenario matrix, the workflows, the error handling, the test flow
-and the next steps. Read it before you start a task, and tick off the tasks
-in "Nächste Schritte" when they are done.
+The plan (German) lives in a private doc outside the repo. If
+`CLAUDE.local.md` exists, it has the link. The plan holds the scenario
+matrix, the workflows, the error handling, the test flow and the next steps.
+Read it before you start a task, and tick off the tasks in "Nächste
+Schritte" when they are done. Never write the link into a tracked file.
 
 ## Layout
 
