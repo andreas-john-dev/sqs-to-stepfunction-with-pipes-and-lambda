@@ -43,7 +43,7 @@ queues and the worker already exist and are deployed.
 
 - [x] Task 1: Pipe construct with tests
 - [x] Task 2: Stack creates a pipe for P1–P4
-- [ ] Task 3: `send_messages.py` and `inspect_queues.py`
+- [x] Task 3: `send_messages.py` and `inspect_queues.py`
 - [ ] Checkpoint: tests, build, synth; review with human
 - [ ] Task 4: Deploy (after approval), run P1–P4, record the results
 
@@ -95,8 +95,8 @@ shows the approximate message counts of source queue, DLQ and error queue,
 and the last executions by status.
 
 **Acceptance criteria:**
-- [ ] Message body `{"simulate": ..., "sleepSeconds"?: ...}`, one SendMessageBatch call per 10 messages
-- [ ] Unit tests for building the message bodies (no AWS calls)
+- [x] Message body `{"simulate": ..., "sleepSeconds"?: ...}`, one SendMessageBatch call per 10 messages
+- [x] Unit tests for building the message bodies (no AWS calls)
 
 **Verification:** `pytest`
 
@@ -141,7 +141,7 @@ in P3 (e.g. 30 s).
 
 ## Status
 
-Plan approved. Tasks 1–2 done (pipe construct, wired into the stack, not
-deployed). Next: `/agent-skills:build` Task 3.
+Plan approved. Tasks 1–3 done (pipe construct, wired into the stack, test
+scripts; pipes not deployed). Next: checkpoint and review with human.
 Stack is deployed in eu-central-1 with all 9 scenarios (no pipes, no
 dispatchers). Local commits are not pushed; push only when asked.

@@ -13,16 +13,10 @@ import time
 
 import boto3
 
-STACK_NAME = "SqsToStepFunctions"
+from stack import stack_outputs
 
-cloudformation = boto3.client("cloudformation")
 sfn = boto3.client("stepfunctions")
 sqs = boto3.client("sqs")
-
-
-def stack_outputs() -> dict:
-    stack = cloudformation.describe_stacks(StackName=STACK_NAME)["Stacks"][0]
-    return {o["OutputKey"]: o["OutputValue"] for o in stack["Outputs"]}
 
 
 def record(message_id: str, simulate: str) -> dict:

@@ -1,5 +1,5 @@
 # Only tool configuration. Dependencies live in src/requirements.txt
 # (bundled into the Lambdas) and requirements-dev.txt (local tests).
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "scripts"]
 testpaths = ["tests"]

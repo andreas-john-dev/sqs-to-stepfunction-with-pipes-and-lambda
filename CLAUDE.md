@@ -21,10 +21,13 @@ Schritte" when they are done. Never write the link into a tracked file.
 - `src/`: Python 3.14 Lambda code (`worker/`, `dispatcher/`, `common/`). All
   functions share `src/requirements.txt` and are bundled with
   `PythonFunction` from `@aws-cdk/aws-lambda-python-alpha` (needs Docker).
-- `tests/`: pytest unit tests. `pyproject.toml` puts `src/` on the path.
-- `scripts/`: `smoke_workflows.py` starts the four workflow types directly
-  (no pipe, no dispatcher) against the deployed stack. Planned: send test
-  messages, inspect queues.
+- `tests/`: pytest unit tests. `pyproject.toml` puts `src/` and `scripts/`
+  on the path.
+- `scripts/`: test scripts against the deployed stack, they read its
+  outputs (`stack.py`). `send_messages.py --scenario P4 ok fail slow:30`
+  sends one message per case, `inspect_queues.py --scenario P4` shows queue
+  counts, pipe state and executions. `smoke_workflows.py` starts the four
+  workflow types directly (no pipe, no dispatcher).
 
 ## Commands
 
