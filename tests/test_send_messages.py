@@ -55,3 +55,14 @@ def test_returns_the_message_ids_in_the_order_of_the_cases():
 def test_raises_if_sqs_rejects_a_message():
     with pytest.raises(RuntimeError, match="Throttled"):
         send_batches(lambda batch: {"Successful": [], "Failed": [{"Id": "0", "Code": "Throttled"}]}, [{"simulate": "ok"}])
+
+
+def test_padding_makes_the_body_bigger_without_changing_the_case():
+    body = message_body("ok", pad_bytes=1000)
+
+    assert body["simulate"] == "ok"
+    assert len(body["padding"]) == 1000
+
+
+def test_no_padding_by_default():
+    assert "padding" not in message_body("ok")

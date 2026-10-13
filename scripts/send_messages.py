@@ -3,8 +3,12 @@
 One message per case. A case is what the worker should do:
 ok, fail, transient, or slow (slow:30 sleeps 30 seconds).
 
+--pad-bytes N adds N bytes to every body, to test the payload limit of
+Step Functions (256 KiB per execution input; SQS takes up to 1 MiB).
+
 Usage (repo root, venv active):
     python scripts/send_messages.py --scenario P4 ok fail transient slow:30
+    python scripts/send_messages.py --scenario P2 --pad-bytes 60000 ok ok ok ok ok
 """
 
 import argparse
@@ -18,8 +22,15 @@ CASES = ("ok", "fail", "transient", "slow")
 MAX_BATCH = 10  # SendMessageBatch takes at most 10 messages
 
 
-def message_body(case: str) -> dict:
+def message_body(case: str, pad_bytes: int = 0) -> dict:
     """'slow:30' -> {"simulate": "slow", "sleepSeconds": 30}"""
+    body = parse_case(case)
+    if pad_bytes:
+        body["padding"] = "x" * pad_bytes
+    return body
+
+
+def parse_case(case: str) -> dict:
     name, _, seconds = case.partition(":")
     if name not in CASES:
         raise ValueError(f"Unknown case {case}. Valid: {', '.join(CASES)}")
@@ -49,11 +60,12 @@ def send_batches(send_batch, bodies: list) -> list:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--scenario", required=True, help="e.g. P4")
+    parser.add_argument("--pad-bytes", type=int, default=0, help="extra bytes per message body")
     parser.add_argument("cases", nargs="+", help="ok, fail, transient, slow or slow:<seconds>")
     args = parser.parse_args()
 
     try:
-        bodies = [message_body(case) for case in args.cases]
+        bodies = [message_body(case, args.pad_bytes) for case in args.cases]
     except ValueError as error:
         parser.error(str(error))
 
