@@ -85,4 +85,11 @@ describe('DispatcherFunction', () => {
   it('refuses a scenario without a dispatcher', () => {
     assert.throws(() => synth('P1'), /No dispatcher for scenario P1/);
   });
+
+  it('keeps its logs one week and deletes them with the stack', () => {
+    synth('L3').hasResource('AWS::Logs::LogGroup', {
+      Properties: { RetentionInDays: 7 },
+      DeletionPolicy: 'Delete',
+    });
+  });
 });

@@ -5,6 +5,10 @@ START_MODE decides how:
   If SQS delivers a message twice, the second start fails with
   ExecutionAlreadyExists, so the record is not processed twice.
 - `batch` (L2): one execution with all records; the workflow maps over them.
+  It has no name, so a batch that comes back (e.g. the Lambda timed out
+  after the start) starts a second execution, and every record of it runs
+  again. A name from the messageIds would not help much: the event source
+  mapping does not promise the same batch on the next delivery.
 
 After the start, SQS deletes the message. From then on the workflow
 handles all errors itself.

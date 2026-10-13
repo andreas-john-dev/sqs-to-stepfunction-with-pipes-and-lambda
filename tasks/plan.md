@@ -50,7 +50,7 @@ wiring, and a test run in AWS like for P1–P4.
 - [x] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
 - [x] Task 3: Sync dispatchers L3 and L5, wired into the stack
 - [x] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
-- [ ] Checkpoint: tests, build, synth; review with human
+- [x] Checkpoint: tests, build, synth; review with human
 - [ ] Task 5: Deploy (after approval), run L1–L5, record the results
 
 ---
@@ -138,8 +138,9 @@ semaphore.
 
 ## Checkpoint: after Tasks 1–4
 
-- [ ] `pytest`, `npm test`, `npm run build`, `npx cdk synth` pass
-- [ ] Review with human (`/agent-skills:review`)
+- [x] `pytest`, `npm test`, `npm run build`, `npx cdk synth` pass
+- [x] Review with human (`/agent-skills:review`): Lambda log groups, L2
+      docstring and dispatcher log summary in `inspect_queues.py` fixed
 
 ## Task 5: Run L1–L5 in AWS
 
@@ -173,5 +174,6 @@ test for L1: invoke the L1 dispatcher twice with the same record
 
 ## Status
 
-Plan approved. Tasks 1–4 done (all five dispatchers wired, one shared code
-asset of 45 MB, not deployed). Next: checkpoint and review with human.
+Plan approved. Tasks 1–4 and the checkpoint done (all five dispatchers
+wired, one shared code asset of 45 MB, not deployed). Next: Task 5
+(cdk diff, deploy after approval).

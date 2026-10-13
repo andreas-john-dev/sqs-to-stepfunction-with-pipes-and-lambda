@@ -1,9 +1,16 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as cdk from 'aws-cdk-lib/core';
 import { Template } from 'aws-cdk-lib/assertions';
 
+/** The feature flags from cdk.json, so tests synthesize like the real app. */
+const FEATURE_FLAGS: Record<string, unknown> = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'cdk.json'), 'utf8'),
+).context;
+
 /** An app that skips Docker bundling, so tests only look at the template. */
 export function testApp(context: Record<string, string> = {}): cdk.App {
-  return new cdk.App({ context: { 'aws:cdk:bundling-stacks': [], ...context } });
+  return new cdk.App({ context: { ...FEATURE_FLAGS, 'aws:cdk:bundling-stacks': [], ...context } });
 }
 
 export function testStack(): cdk.Stack {

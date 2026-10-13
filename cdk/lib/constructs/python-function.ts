@@ -1,6 +1,7 @@
 import * as path from 'node:path';
-import { Duration } from 'aws-cdk-lib/core';
+import { Duration, RemovalPolicy } from 'aws-cdk-lib/core';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
 import { Construct } from 'constructs';
 
@@ -19,7 +20,7 @@ export interface PythonFunctionProps {
  * in the handler. Python 3.14 on arm64.
  */
 export function pythonFunction(scope: Construct, id: string, props: PythonFunctionProps): PythonFunction {
-  return new PythonFunction(scope, id, {
+  const fn = new PythonFunction(scope, id, {
     entry: PYTHON_SRC,
     index: props.index,
     handler: 'handler',
@@ -29,4 +30,13 @@ export function pythonFunction(scope: Construct, id: string, props: PythonFuncti
     environment: props.environment,
     bundling: { assetExcludes: ['__pycache__', '*.pyc'] },
   });
+
+  // CDK creates the log group /aws/lambda/<name> with 2 years and Retain.
+  // Change that one in place: a new log group would clash with its name.
+  const logGroup = fn.node.findChild('LogGroup') as logs.LogGroup;
+  const cfnLogGroup = logGroup.node.defaultChild as logs.CfnLogGroup;
+  cfnLogGroup.retentionInDays = logs.RetentionDays.ONE_WEEK;
+  logGroup.applyRemovalPolicy(RemovalPolicy.DESTROY);
+
+  return fn;
 }

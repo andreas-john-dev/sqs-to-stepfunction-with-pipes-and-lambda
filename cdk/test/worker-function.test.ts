@@ -23,4 +23,11 @@ describe('WorkerFunction', () => {
       Environment: { Variables: { DEFAULT_SLEEP_SECONDS: '10' } },
     });
   });
+
+  it('keeps its logs one week and deletes them with the stack', () => {
+    synth().hasResource('AWS::Logs::LogGroup', {
+      Properties: { RetentionInDays: 7 },
+      DeletionPolicy: 'Delete',
+    });
+  });
 });
