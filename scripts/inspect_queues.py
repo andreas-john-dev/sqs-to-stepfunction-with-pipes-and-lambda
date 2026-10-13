@@ -25,8 +25,9 @@ EXPRESS_METRICS = ("ExecutionsStarted", "ExecutionsSucceeded", "ExecutionsFailed
 
 DISPATCHER_QUERIES = {
     # The line from common/batch_response.log_batch. A run that timed out writes none.
-    "batches": "filter ispresent(durationMs) | stats count(*) as batches, sum(records) as records,"
-    " sum(failures) as failures, avg(durationMs) as avgMs, max(durationMs) as maxMs",
+    # An alias with the name of the field (sum(records) as records) gives no value.
+    "batches": "filter ispresent(durationMs) | stats count(*) as batches, sum(records) as totalRecords,"
+    " sum(failures) as totalFailures, avg(durationMs) as avgMs, max(durationMs) as maxMs",
     "invocations": 'filter @type = "REPORT" | stats count(*) as invocations, max(@duration) as maxMs',
     "timeouts": "filter @message like /Status: timeout/ | stats count(*) as timeouts",
     "cold starts": "filter ispresent(@initDuration) | stats count(*) as coldStarts, avg(@initDuration) as avgInitMs",
