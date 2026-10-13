@@ -49,7 +49,7 @@ wiring, and a test run in AWS like for P1–P4.
 - [x] Task 1: Shared batch response and the async dispatcher (L1, L2)
 - [x] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
 - [x] Task 3: Sync dispatchers L3 and L5, wired into the stack
-- [ ] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
+- [x] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
 - [ ] Checkpoint: tests, build, synth; review with human
 - [ ] Task 5: Deploy (after approval), run L1–L5, record the results
 
@@ -123,9 +123,9 @@ tests for both, `cdk/lib/constructs/dispatcher-function.ts`, its test
 semaphore.
 
 **Acceptance criteria:**
-- [ ] Same result as L3 for the same records (shared status check)
-- [ ] At most 10 calls at a time (test with a fake client that counts open calls)
-- [ ] `AioConfig` as in the doc; client created per invocation in `async with`
+- [x] Same result as L3 for the same records (shared status check)
+- [x] At most 10 calls at a time (test with a fake client that counts open calls)
+- [x] `AioConfig` as in the doc; client created per invocation in `async with`
 
 **Verification:** `pytest`, `npm test`, `npm run build`
 
@@ -173,5 +173,5 @@ test for L1: invoke the L1 dispatcher twice with the same record
 
 ## Status
 
-Plan approved. Tasks 1–3 done (L1, L2, L3, L5 dispatchers wired, not
-deployed). Next: `/agent-skills:build` Task 4.
+Plan approved. Tasks 1–4 done (all five dispatchers wired, one shared code
+asset of 45 MB, not deployed). Next: checkpoint and review with human.

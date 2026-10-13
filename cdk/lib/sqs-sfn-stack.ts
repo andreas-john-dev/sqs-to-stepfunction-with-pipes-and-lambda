@@ -3,7 +3,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
-import { DISPATCHERS, DispatcherFunction } from './constructs/dispatcher-function';
+import { DispatcherFunction } from './constructs/dispatcher-function';
 import { PipeIntegration } from './constructs/pipe-integration';
 import { ScenarioQueues } from './constructs/scenario-queues';
 import { WorkerFunction } from './constructs/worker-function';
@@ -39,8 +39,7 @@ export class SqsSfnStack extends cdk.Stack {
         });
         new cdk.CfnOutput(this, `${scenario.id}PipeName`, { value: pipe.pipeName });
       }
-      // Until all dispatchers exist, only the scenarios that have one are wired.
-      if (scenario.integration === 'lambda' && DISPATCHERS[scenario.id]) {
+      if (scenario.integration === 'lambda') {
         const dispatcher = new DispatcherFunction(scenarioScope, 'Dispatcher', {
           scenario,
           source: queues.source,

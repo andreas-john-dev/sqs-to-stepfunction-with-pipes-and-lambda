@@ -55,6 +55,10 @@ describe('DispatcherFunction', () => {
     synth('L3').hasResourceProperties('AWS::Lambda::Function', { Handler: 'dispatcher.start_sync_sequential.handler' });
   });
 
+  it('L4 starts one sync Express execution per record, in parallel', () => {
+    synth('L4').hasResourceProperties('AWS::Lambda::Function', { Handler: 'dispatcher.start_sync_parallel.handler' });
+  });
+
   it('L5 starts one sync Express execution with the whole batch', () => {
     synth('L5').hasResourceProperties('AWS::Lambda::Function', { Handler: 'dispatcher.start_sync_batch.handler' });
   });

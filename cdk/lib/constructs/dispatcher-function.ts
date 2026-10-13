@@ -17,6 +17,7 @@ export const DISPATCHERS: Readonly<Record<string, Dispatcher>> = {
   L1: { index: 'dispatcher/start_async.py', environment: { START_MODE: 'per-record' } },
   L2: { index: 'dispatcher/start_async.py', environment: { START_MODE: 'batch' } },
   L3: { index: 'dispatcher/start_sync_sequential.py' },
+  L4: { index: 'dispatcher/start_sync_parallel.py' },
   L5: { index: 'dispatcher/start_sync_batch.py' },
 };
 
