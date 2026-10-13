@@ -45,7 +45,7 @@ queues and the worker already exist and are deployed.
 - [x] Task 2: Stack creates a pipe for P1–P4
 - [x] Task 3: `send_messages.py` and `inspect_queues.py`
 - [x] Checkpoint: tests, build, synth; review with human
-- [ ] Task 4: Deploy (after approval), run P1–P4, record the results
+- [x] Task 4: Deploy (after approval), run P1–P4, record the results
 
 ---
 
@@ -114,9 +114,10 @@ mixed batch to each pipe scenario, wait, inspect. Then a short `slow` test
 in P3 (e.g. 30 s).
 
 **Acceptance criteria:**
-- [ ] Results match the expectation table in the doc, or the doc is updated
+- [x] Results match the expectation table in the doc, or the doc is updated
       with what really happens
-- [ ] Open points 1, 3, 4 confirmed or corrected with real data
+- [x] Open points 1, 3, 4 confirmed or corrected with real data (3: slow:290
+      ok in P3 and P4; slow:310 ends with States.Timeout after 5:00)
 
 **Verification:** `inspect_queues.py` output per scenario, saved in the doc
 
@@ -141,9 +142,7 @@ in P3 (e.g. 30 s).
 
 ## Status
 
-Plan approved. Tasks 1–3 done (pipe construct, wired into the stack, test
-scripts; pipes not deployed). Checkpoint done: review found 2 important
-points, 3 suggestions, 2 nits, all fixed. Next: Task 4 (cdk diff, deploy
-after approval).
-Stack is deployed in eu-central-1 with all 9 scenarios (no pipes, no
-dispatchers). Local commits are not pushed; push only when asked.
+Done on 2026-10-13. Pipes deployed in eu-central-1, P1–P4 behave as the
+expectation table says. Findings (batching splits batches, P4 failures do
+not show in ExecutionsFailed, redelivery after 7–8 min in P4) and new open
+points are in the doc. Local commits are not pushed; push only when asked.
