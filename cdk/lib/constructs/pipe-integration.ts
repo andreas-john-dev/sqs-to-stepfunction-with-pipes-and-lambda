@@ -30,9 +30,8 @@ export class PipeIntegration extends Construct {
     const { scenario } = props;
 
     // Failed target calls show up here, e.g. a sync execution that failed.
-    const path = this.node.scopes.map(s => s.node.id).filter(Boolean).join('-');
     const logGroup = new logs.LogGroup(this, 'Logs', {
-      logGroupName: `/aws/vendedlogs/pipes/${path}`,
+      logGroupName: `/aws/vendedlogs/pipes/${this.node.path.replaceAll('/', '-')}`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: RemovalPolicy.DESTROY,
     });

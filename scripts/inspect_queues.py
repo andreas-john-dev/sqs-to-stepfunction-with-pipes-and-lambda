@@ -1,8 +1,9 @@
 """Show what happened in a scenario: queue counts, pipe state, executions.
 
-Queue counts are approximate and lag a few seconds. Express executions
-have no history, so for them the script sums the CloudWatch metrics of
-the last minutes instead; the metrics lag about a minute.
+Executions count only if they started in the last --minutes. Queue
+counts are approximate and lag a few seconds. Express executions have no
+history, so for them the script sums the CloudWatch metrics instead; the
+metrics lag about a minute.
 
 Usage (repo root, venv active):
     python scripts/inspect_queues.py --scenario P4 [--minutes 30]
@@ -39,10 +40,22 @@ def print_pipe(outputs: dict) -> None:
         print(f"Pipe {pipe['Name']}: {pipe['CurrentState']}")
 
 
-def print_standard_executions(arn: str) -> None:
-    executions = boto3.client("stepfunctions").list_executions(stateMachineArn=arn, maxResults=20)["executions"]
+def started_since(pages, since: datetime) -> list:
+    """Executions from ListExecutions pages (newest first) that started at or after `since`."""
+    result = []
+    for page in pages:
+        for execution in page["executions"]:
+            if execution["startDate"] < since:
+                return result
+            result.append(execution)
+    return result
+
+
+def print_standard_executions(arn: str, minutes: int) -> None:
+    pages = boto3.client("stepfunctions").get_paginator("list_executions").paginate(stateMachineArn=arn)
+    executions = started_since(pages, datetime.now(timezone.utc) - timedelta(minutes=minutes))
     counts = Counter(e["status"] for e in executions)
-    print(f"Last {len(executions)} executions: {dict(counts)}")
+    print(f"Executions in the last {minutes} min: {dict(counts)}")
     for e in executions[:10]:
         print(f"  {e['startDate']:%H:%M:%S}  {e['status']:10} {e['name']}")
 
@@ -67,7 +80,7 @@ def print_express_metrics(arn: str, minutes: int) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--scenario", required=True, help="e.g. P4")
-    parser.add_argument("--minutes", type=int, default=30, help="time window for Express metrics")
+    parser.add_argument("--minutes", type=int, default=30, help="only executions started in this window")
     args = parser.parse_args()
 
     outputs = scenario_outputs(args.scenario)
@@ -77,7 +90,7 @@ def main() -> None:
     if boto3.client("stepfunctions").describe_state_machine(stateMachineArn=arn)["type"] == "EXPRESS":
         print_express_metrics(arn, args.minutes)
     else:
-        print_standard_executions(arn)
+        print_standard_executions(arn, args.minutes)
 
 
 if __name__ == "__main__":

@@ -209,10 +209,9 @@ function handleErrors(
  * The name follows the construct path, e.g. SqsToStepFunctions-P3-Workflow.
  */
 function expressLogs(scope: Construct, id: string): sfn.LogOptions {
-  const path = [...scope.node.scopes.map(s => s.node.id).filter(Boolean), id].join('-');
   return {
     destination: new logs.LogGroup(scope, `${id}Logs`, {
-      logGroupName: `/aws/vendedlogs/states/${path}`,
+      logGroupName: `/aws/vendedlogs/states/${scope.node.path.replaceAll('/', '-')}-${id}`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: RemovalPolicy.DESTROY,
     }),

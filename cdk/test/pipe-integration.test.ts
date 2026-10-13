@@ -21,9 +21,14 @@ function synth(scenarioId: string): Template {
   return Template.fromStack(stack);
 }
 
-/** All actions the pipe role may call, from all of its policies. */
+/** All actions the pipe role may call. Policies of other roles, like the workflow's, do not count. */
 function pipeRoleActions(template: Template): string[] {
-  const policies = Object.values(template.findResources('AWS::IAM::Policy'));
+  const pipe = Object.values(template.findResources('AWS::Pipes::Pipe'))[0];
+  const pipeRoleId = pipe.Properties.RoleArn['Fn::GetAtt'][0];
+  const policies = Object.values(template.findResources('AWS::IAM::Policy')).filter(policy =>
+    policy.Properties.Roles.some((role: { Ref: string }) => role.Ref === pipeRoleId),
+  );
+  assert.ok(policies.length > 0, 'pipe role has no policy');
   return policies.flatMap(policy =>
     policy.Properties.PolicyDocument.Statement.flatMap((s: { Action: string | string[] }) => [s.Action].flat()),
   );

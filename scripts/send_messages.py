@@ -42,7 +42,7 @@ def send_batches(send_batch, bodies: list) -> list:
         if response.get("Failed"):
             raise RuntimeError(f"SQS rejected messages: {response['Failed']}")
         by_id = {s["Id"]: s["MessageId"] for s in response["Successful"]}
-        message_ids += [by_id.get(e["Id"]) for e in entries]
+        message_ids += [by_id[e["Id"]] for e in entries]
     return message_ids
 
 

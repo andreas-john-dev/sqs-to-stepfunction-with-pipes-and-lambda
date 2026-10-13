@@ -41,7 +41,10 @@ npm ci
 
 ```bash
 pytest                    # Python unit tests (repo root)
-python scripts/smoke_workflows.py   # start the 4 workflow types directly (stack deployed)
+# with the stack deployed:
+python scripts/send_messages.py --scenario P4 ok fail transient slow:30   # one message per case
+python scripts/inspect_queues.py --scenario P4 --minutes 30              # queues, pipe, executions
+python scripts/smoke_workflows.py   # start the 4 workflow types directly
 
 cd cdk
 npm test                  # CDK tests

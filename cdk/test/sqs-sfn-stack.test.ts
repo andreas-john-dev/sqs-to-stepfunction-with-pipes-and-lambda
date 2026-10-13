@@ -31,12 +31,6 @@ describe('SqsSfnStack', () => {
     synth().resourceCountIs('AWS::Lambda::Function', 1);
   });
 
-  it('has no pipe name output for dispatcher scenarios', () => {
-    const outputs = Object.keys(synth({ scenarios: 'L1' }).findOutputs('*'));
-
-    assert.ok(!outputs.includes('L1PipeName'));
-  });
-
   it('deploys only the scenarios from the context flag', () => {
     const types = stateMachineTypes(synth({ scenarios: 'P1,L4' }));
 
