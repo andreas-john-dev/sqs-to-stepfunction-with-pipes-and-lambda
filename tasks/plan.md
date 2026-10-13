@@ -46,7 +46,7 @@ wiring, and a test run in AWS like for P1–P4.
 
 ## Task List
 
-- [ ] Task 1: Shared batch response and the async dispatcher (L1, L2)
+- [x] Task 1: Shared batch response and the async dispatcher (L1, L2)
 - [ ] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
 - [ ] Task 3: Sync dispatchers L3 and L5, wired into the stack
 - [ ] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
@@ -61,10 +61,10 @@ wiring, and a test run in AWS like for P1–P4.
 `src/dispatcher/start_async.py` with `START_MODE` `per-record` or `batch`.
 
 **Acceptance criteria:**
-- [ ] `per-record`: one `StartExecution` per record, name = messageId, input = the record
-- [ ] `per-record`: `ExecutionAlreadyExists` counts as success; any other error reports only that record
-- [ ] `batch`: one `StartExecution` with all records; an error is raised, so the whole batch comes back
-- [ ] One log line per batch: records, failures, duration
+- [x] `per-record`: one `StartExecution` per record, name = messageId, input = the record
+- [x] `per-record`: `ExecutionAlreadyExists` counts as success; any other error reports only that record
+- [x] `batch`: one `StartExecution` with all records; an error is raised, so the whole batch comes back
+- [x] One log line per batch: records, failures, duration
 
 **Verification:** `pytest`
 
@@ -171,4 +171,5 @@ test for L1: invoke the L1 dispatcher twice with the same record
 
 ## Status
 
-Plan approved, build not started yet. Next: `/agent-skills:build` Task 1.
+Plan approved. Task 1 done (async dispatcher, not wired yet). Next:
+`/agent-skills:build` Task 2.
