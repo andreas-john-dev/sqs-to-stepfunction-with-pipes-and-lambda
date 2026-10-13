@@ -123,6 +123,12 @@ describe('standardSingleWorkflow', () => {
     assert.match(String(all[catcher.Next].Resource), /sqs:sendMessage$/);
   });
 
+  it('ends as FAILED after sending the record to the error queue', () => {
+    const all = states();
+
+    assert.equal(all[String(all.SendToErrorQueue.Next)].Type, 'Fail');
+  });
+
   it('may send to the error queue', () => {
     synth().hasResourceProperties('AWS::IAM::Policy', {
       PolicyDocument: {
@@ -253,6 +259,58 @@ describe('standardBatchWorkflow', () => {
       PolicyDocument: {
         Statement: Match.arrayWith([Match.objectLike({ Action: 'sqs:SendMessage' })]),
       },
+    });
+  });
+
+  it('marks a record that went to the error queue as failed', async () => {
+    const states = allStates(definition());
+    const sentToErrorQueue = { record: { messageId: 'b', body: '{}' }, error: { Error: 'PermanentError' } };
+
+    const output = await evaluate(states.SendToErrorQueue.Output, sentToErrorQueue);
+
+    assert.deepEqual(output, { messageId: 'b', failed: true });
+  });
+
+  it('keeps the Fail state out of the Map, so the other records still finish', () => {
+    const map = Object.values(definition().States).find(s => s.Type === 'Map');
+    const itemStates = Object.values(map?.ItemProcessor?.States ?? {});
+
+    assert.ok(itemStates.length > 0);
+    assert.ok(itemStates.every(s => s.Type !== 'Fail'));
+  });
+
+  describe('after the Map', () => {
+    const mapResult = [
+      { messageId: 'a', status: 'ok', attempt: 1 },
+      { messageId: 'b', failed: true },
+    ];
+
+    function check() {
+      const states = definition().States;
+      const choice = Object.values(states).find(s => s.Type === 'Choice');
+      assert.ok(choice);
+      const [rule] = choice.Choices as { Condition: string; Next: string }[];
+      return { states, choice, rule };
+    }
+
+    it('fails the execution when at least one record failed', async () => {
+      const { states, rule } = check();
+
+      assert.equal(await evaluate(rule.Condition, mapResult), true);
+      assert.equal(states[rule.Next].Type, 'Fail');
+    });
+
+    it('succeeds when all records succeeded', async () => {
+      const { states, choice, rule } = check();
+
+      assert.equal(await evaluate(rule.Condition, [{ messageId: 'a', status: 'ok', attempt: 1 }]), false);
+      assert.equal(states[String(choice.Default)].Type, 'Succeed');
+    });
+
+    it('says in the cause how many records failed', async () => {
+      const { states, rule } = check();
+
+      assert.equal(await evaluate(states[rule.Next].Cause, mapResult), '1 of 2 records sent to the error queue');
     });
   });
 });

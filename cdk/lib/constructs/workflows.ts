@@ -32,6 +32,9 @@ const SINGLE_RECORD = `$count($states.input) > 1
 /** Input of a Map item: the record itself. */
 const MAP_ITEM = '$states.input';
 
+/** The records of a Map result that failed. Failed items look like {"messageId": ..., "failed": true}. */
+const FAILED_RECORDS = '$states.input[failed = true]';
+
 /**
  * express-single (P3, L3, L4): one record, started synchronously.
  * No Retry and no Catch: a failure fails the execution, so the caller
@@ -52,10 +55,18 @@ export function expressSingleWorkflow(scope: Construct, id: string, props: Workf
  * standard-single (P1, L1): one record, started asynchronously. SQS has
  * already deleted the message, so the workflow handles errors itself:
  * retry TransientError, send everything else to the error queue.
+ * The execution still ends as FAILED, so the failure shows up in the
+ * console and in the ExecutionsFailed metric.
  */
 export function standardSingleWorkflow(scope: Construct, id: string, props: StandardWorkflowProps): sfn.StateMachine {
   const processMessage = invokeWorker(scope, id, props.worker, SINGLE_RECORD);
-  handleErrors(scope, id, processMessage, props.errorQueue, SINGLE_RECORD);
+  handleErrors(scope, id, processMessage, props.errorQueue, SINGLE_RECORD).next(
+    sfn.Fail.jsonata(scope, `${id}MessageFailed`, {
+      stateName: 'MessageFailed',
+      error: 'MessageFailed',
+      cause: 'The record was sent to the error queue',
+    }),
+  );
 
   return new sfn.StateMachine(scope, id, {
     stateMachineType: sfn.StateMachineType.STANDARD,
@@ -80,7 +91,7 @@ export function expressBatchWorkflow(scope: Construct, id: string, props: Workfl
   // Partial batch response: https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html
   const buildBatchResponse = sfn.Pass.jsonata(scope, `${id}BuildBatchResponse`, {
     stateName: 'BuildBatchResponse',
-    outputs: '{% {"batchItemFailures": [$states.input[failed = true].{"itemIdentifier": messageId}]} %}',
+    outputs: `{% {"batchItemFailures": [${FAILED_RECORDS}.{"itemIdentifier": messageId}]} %}`,
   });
 
   const definition = processEachRecord(scope, id, processMessage).next(buildBatchResponse);
@@ -96,16 +107,28 @@ export function expressBatchWorkflow(scope: Construct, id: string, props: Workfl
 /**
  * standard-batch (P2, L2): a batch of records, started asynchronously.
  * Each record gets the same retry and catch as in standard-single;
- * a failed record does not stop the others.
+ * a failed record does not stop the others. After all records are done,
+ * the execution ends as FAILED if at least one of them failed.
  */
 export function standardBatchWorkflow(scope: Construct, id: string, props: StandardWorkflowProps): sfn.StateMachine {
   const processMessage = invokeWorker(scope, id, props.worker, MAP_ITEM);
   handleErrors(scope, id, processMessage, props.errorQueue, MAP_ITEM);
 
+  const recordsFailed = sfn.Fail.jsonata(scope, `${id}RecordsFailed`, {
+    stateName: 'RecordsFailed',
+    error: 'RecordsFailed',
+    cause: `{% $count(${FAILED_RECORDS}) & " of " & $count($states.input) & " records sent to the error queue" %}`,
+  });
+  const anyRecordFailed = sfn.Choice.jsonata(scope, `${id}AnyRecordFailed`, { stateName: 'AnyRecordFailed' })
+    .when(sfn.Condition.jsonata(`{% $count(${FAILED_RECORDS}) > 0 %}`), recordsFailed)
+    .otherwise(sfn.Succeed.jsonata(scope, `${id}AllRecordsDone`, { stateName: 'AllRecordsDone' }));
+
+  const definition = processEachRecord(scope, id, processMessage).next(anyRecordFailed);
+
   return new sfn.StateMachine(scope, id, {
     stateMachineType: sfn.StateMachineType.STANDARD,
     queryLanguage: sfn.QueryLanguage.JSONATA,
-    definitionBody: sfn.DefinitionBody.fromChainable(processEachRecord(scope, id, processMessage)),
+    definitionBody: sfn.DefinitionBody.fromChainable(definition),
   });
 }
 
@@ -145,7 +168,8 @@ function processEachRecord(scope: Construct, id: string, processMessage: sfn.ICh
 
 /**
  * Error handling of the standard workflows: retry TransientError, send
- * everything else with the record to the error queue.
+ * everything else with the record to the error queue. Returns the
+ * SendToErrorQueue state, whose output marks the record as failed.
  */
 function handleErrors(
   scope: Construct,
@@ -153,11 +177,12 @@ function handleErrors(
   processMessage: tasks.LambdaInvoke,
   errorQueue: sqs.IQueue,
   record: string,
-): void {
+): tasks.SqsSendMessage {
   const sendToErrorQueue = tasks.SqsSendMessage.jsonata(scope, `${id}SendToErrorQueue`, {
     stateName: 'SendToErrorQueue',
     queue: errorQueue,
     messageBody: sfn.TaskInput.fromText('{% $string($states.input) %}'),
+    outputs: '{% {"messageId": $states.input.record.messageId, "failed": true} %}',
   });
 
   processMessage
@@ -166,6 +191,8 @@ function handleErrors(
       errors: [sfn.Errors.ALL],
       outputs: `{% {"record": ${record}, "error": $states.errorOutput} %}`,
     });
+
+  return sendToErrorQueue;
 }
 
 /**
