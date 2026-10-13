@@ -51,7 +51,7 @@ wiring, and a test run in AWS like for P1–P4.
 - [x] Task 3: Sync dispatchers L3 and L5, wired into the stack
 - [x] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
 - [x] Checkpoint: tests, build, synth; review with human
-- [ ] Task 5: Deploy (after approval), run L1–L5, record the results
+- [x] Task 5: Deploy (after approval), run L1–L5, record the results
 
 ---
 
@@ -150,9 +150,11 @@ test for L1: invoke the L1 dispatcher twice with the same record
 (`aws lambda invoke`); the second call must not start a new execution.
 
 **Acceptance criteria:**
-- [ ] Results in the doc's expectation table, findings in the outline
-- [ ] L3 vs L4 duration from the dispatcher log line
-- [ ] Open points "records of pipe and ESM identical" and "aioboto3 cold start" answered
+- [x] Results in the doc's expectation table, findings in the outline
+- [x] L3 vs L4 duration from the dispatcher log line (L3: 60 s timeout,
+      7 of 10 in the DLQ after 23 successful executions; L4: 30–32 s)
+- [x] Open points "records of pipe and ESM identical" (yes) and "aioboto3
+      cold start" (about +0.5 s) answered
 
 **Dependencies:** Checkpoint
 
@@ -174,6 +176,6 @@ test for L1: invoke the L1 dispatcher twice with the same record
 
 ## Status
 
-Plan approved. Tasks 1–4 and the checkpoint done (all five dispatchers
-wired, one shared code asset of 45 MB, not deployed). Next: Task 5
-(cdk diff, deploy after approval).
+Done on 2026-10-13. All five dispatchers deployed in eu-central-1, L1–L5
+behave as the expectation table says; results and findings are in the
+doc. Push only when asked.
