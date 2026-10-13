@@ -11,6 +11,21 @@ The stack has nine scenarios side by side: four with a Pipe (P1–P4) and five
 with a dispatcher Lambda (L1–L5). Red dashed lines in the diagram show where a
 failed message ends up.
 
+## Scenarios
+
+Each scenario is one entry in `cdk/lib/scenarios.ts`: Pipe or dispatcher
+Lambda, Standard or Express workflow, sync or async start, batch size, batching
+window and visibility timeout. Each scenario gets its own source queue, DLQ and
+state machine. All scenarios share one worker Lambda.
+
+The visibility timeout must cover the time a message is in flight:
+
+| Scenarios | Visibility timeout | Why |
+| --- | --- | --- |
+| P1, P2 (async Pipe) | 1 minute | The pipe only starts the execution. |
+| P3, P4 (sync Pipe) | 6 minutes | An Express execution runs up to 5 minutes. With a batching window (P4), the pipe sets its own: 7 minutes + window + 30 seconds. |
+| L1–L5 (dispatcher Lambda) | 6 minutes 5 seconds | AWS recommends 6 × the function timeout (1 minute) plus the batching window (5 seconds). |
+
 ## Layout
 
 | Path | Content |
@@ -56,5 +71,6 @@ npm test                  # CDK tests
 npm run build             # type-check the CDK app
 npx cdk synth             # synthesize the CloudFormation template
 npx cdk deploy            # deploy the stack
+npx cdk deploy -c scenarios=P3,L4   # deploy only some scenarios
 npx cdk destroy           # remove the stack
 ```

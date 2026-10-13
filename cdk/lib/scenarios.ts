@@ -22,15 +22,18 @@ export interface ScenarioConfig {
 /** Timeout of the dispatcher Lambdas. L3 runs up to 10 executions one after the other. */
 export const DISPATCHER_TIMEOUT = Duration.minutes(1);
 
-// Lambda: AWS recommends 6 x the function timeout.
-const LAMBDA_VISIBILITY = Duration.seconds(DISPATCHER_TIMEOUT.toSeconds() * 6);
+const SINGLE = { batchSize: 1, maxBatchingWindow: Duration.seconds(0) };
+const BATCH = { batchSize: 10, maxBatchingWindow: Duration.seconds(5) };
+
+// Lambda: AWS recommends 6 x the function timeout, plus the batching window.
+// All dispatchers use BATCH.
+const LAMBDA_VISIBILITY = Duration.seconds(DISPATCHER_TIMEOUT.toSeconds() * 6 + BATCH.maxBatchingWindow.toSeconds());
 // Pipe async: the pipe only starts the execution.
 const PIPE_ASYNC_VISIBILITY = Duration.minutes(1);
 // Pipe sync: the pipe waits for the Express execution, which runs at most 5 minutes.
+// With a batching window (P4), the pipe ignores this and sets its own visibility
+// timeout: 7 minutes + window + 30 seconds.
 const PIPE_SYNC_VISIBILITY = Duration.minutes(6);
-
-const SINGLE = { batchSize: 1, maxBatchingWindow: Duration.seconds(0) };
-const BATCH = { batchSize: 10, maxBatchingWindow: Duration.seconds(5) };
 
 export const SCENARIOS: readonly ScenarioConfig[] = [
   { id: 'P1', integration: 'pipe', workflow: 'standard-single', invocation: 'async', ...SINGLE, visibilityTimeout: PIPE_ASYNC_VISIBILITY },
