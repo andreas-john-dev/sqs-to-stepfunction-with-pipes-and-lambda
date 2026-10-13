@@ -16,6 +16,8 @@ interface Dispatcher {
 export const DISPATCHERS: Readonly<Record<string, Dispatcher>> = {
   L1: { index: 'dispatcher/start_async.py', environment: { START_MODE: 'per-record' } },
   L2: { index: 'dispatcher/start_async.py', environment: { START_MODE: 'batch' } },
+  L3: { index: 'dispatcher/start_sync_sequential.py' },
+  L5: { index: 'dispatcher/start_sync_batch.py' },
 };
 
 export interface DispatcherFunctionProps {

@@ -48,7 +48,7 @@ wiring, and a test run in AWS like for P1–P4.
 
 - [x] Task 1: Shared batch response and the async dispatcher (L1, L2)
 - [x] Task 2: `DispatcherFunction` construct, stack wires L1 and L2
-- [ ] Task 3: Sync dispatchers L3 and L5, wired into the stack
+- [x] Task 3: Sync dispatchers L3 and L5, wired into the stack
 - [ ] Task 4: Parallel dispatcher L4 with aioboto3, wired into the stack
 - [ ] Checkpoint: tests, build, synth; review with human
 - [ ] Task 5: Deploy (after approval), run L1–L5, record the results
@@ -103,9 +103,10 @@ scenario. Handlers that do not exist yet make the construct throw.
 with boto3; the construct knows their handlers.
 
 **Acceptance criteria:**
-- [ ] L3: `StartSyncExecution` per record in a loop; status ≠ SUCCEEDED reports the record
-- [ ] L5: one call with the batch; passes `batchItemFailures` from the output through; status ≠ SUCCEEDED reports all records
-- [ ] boto3 client with `read_timeout` above 300 s, so a long Express run does not cut the call
+- [x] L3: `StartSyncExecution` per record in a loop; status ≠ SUCCEEDED reports the record
+- [x] L5: one call with the batch; passes `batchItemFailures` from the output through; status ≠ SUCCEEDED reports all records
+- [x] boto3 client with `read_timeout` above 300 s, so a long Express run does not cut the call
+      (shared in `dispatcher/sync_result.py`, together with the status check)
 
 **Verification:** `pytest`, `npm test`, `npm run build`
 
@@ -172,5 +173,5 @@ test for L1: invoke the L1 dispatcher twice with the same record
 
 ## Status
 
-Plan approved. Tasks 1–2 done (async dispatcher, wired for L1/L2, not
-deployed). Next: `/agent-skills:build` Task 3.
+Plan approved. Tasks 1–3 done (L1, L2, L3, L5 dispatchers wired, not
+deployed). Next: `/agent-skills:build` Task 4.

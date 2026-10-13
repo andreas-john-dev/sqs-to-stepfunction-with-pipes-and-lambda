@@ -35,10 +35,12 @@ describe('SqsSfnStack', () => {
     assert.equal(handlers(synth()).filter(h => h.startsWith('worker.')).length, 1);
   });
 
-  it('starts the workflows of L1 and L2 with a dispatcher Lambda', () => {
-    assert.deepEqual(handlers(synth({ scenarios: 'L1,L2' })).filter(h => h.startsWith('dispatcher.')), [
+  it('starts the workflows of L1, L2, L3 and L5 with a dispatcher Lambda', () => {
+    assert.deepEqual(handlers(synth({ scenarios: 'L1,L2,L3,L5' })).filter(h => h.startsWith('dispatcher.')).sort(), [
       'dispatcher.start_async.handler',
       'dispatcher.start_async.handler',
+      'dispatcher.start_sync_batch.handler',
+      'dispatcher.start_sync_sequential.handler',
     ]);
   });
 

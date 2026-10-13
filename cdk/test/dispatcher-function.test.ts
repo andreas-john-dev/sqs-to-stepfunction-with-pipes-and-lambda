@@ -51,6 +51,18 @@ describe('DispatcherFunction', () => {
     });
   });
 
+  it('L3 starts one sync Express execution per record, one after the other', () => {
+    synth('L3').hasResourceProperties('AWS::Lambda::Function', { Handler: 'dispatcher.start_sync_sequential.handler' });
+  });
+
+  it('L5 starts one sync Express execution with the whole batch', () => {
+    synth('L5').hasResourceProperties('AWS::Lambda::Function', { Handler: 'dispatcher.start_sync_batch.handler' });
+  });
+
+  it('may start a sync Express execution in sync scenarios', () => {
+    assert.ok(dispatcherActions(synth('L5')).includes('states:StartSyncExecution'));
+  });
+
   it('reads the queue in batches of 10 within 5 seconds and reports failed items', () => {
     synth('L1').hasResourceProperties('AWS::Lambda::EventSourceMapping', {
       BatchSize: 10,
