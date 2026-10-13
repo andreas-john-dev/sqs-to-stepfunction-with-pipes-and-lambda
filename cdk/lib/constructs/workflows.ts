@@ -6,6 +6,13 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
 
+// Rule for error handling: whoever still holds the message handles the error.
+// - sync (express-*): SQS still holds the message until the call returns.
+//   The workflow fails and SQS does redelivery and the DLQ. No retry, and
+//   a Catch only to report failed batch items, never to swallow an error.
+// - async (standard-*): SQS has already deleted the message. The workflow
+//   retries and catches everything itself, and still ends as FAILED.
+
 export interface WorkflowProps {
   /** The worker Lambda that processes one SQS record. */
   readonly worker: lambda.IFunction;
