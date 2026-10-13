@@ -4,6 +4,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "test": "tsx --test 'test/**/*.test.ts'",
     "synth": "cdk synth",
     "cdk": "cdk"
   },

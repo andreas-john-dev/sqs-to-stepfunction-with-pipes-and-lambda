@@ -43,6 +43,7 @@ npm ci
 pytest                    # Python unit tests (repo root)
 
 cd cdk
+npm test                  # CDK tests
 npm run build             # type-check the CDK app
 npx cdk synth             # synthesize the CloudFormation template
 npx cdk deploy            # deploy the stack

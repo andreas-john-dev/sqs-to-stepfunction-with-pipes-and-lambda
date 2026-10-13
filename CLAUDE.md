@@ -25,6 +25,7 @@ in "Nächste Schritte" when they are done.
 
 ```bash
 source .venv/bin/activate && pytest     # Python tests, from repo root
+cd cdk && npm test                      # CDK tests (node:test + assertions)
 cd cdk && npm run build                 # type-check (tsc, strict)
 cd cdk && npx cdk synth                 # synth
 ```

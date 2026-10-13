@@ -49,7 +49,7 @@ scenarios.ts ──► ScenarioQueues construct ─────┘
 ### Phase 1: Foundation
 
 - [x] Task 1: Worker logic in Python with unit tests
-- [ ] Task 2: Scenario config and queues construct, with CDK test setup
+- [x] Task 2: Scenario config and queues construct, with CDK test setup
 - [ ] Task 3: Worker Lambda construct (PythonFunction, Python 3.14)
 
 ### Checkpoint: Foundation

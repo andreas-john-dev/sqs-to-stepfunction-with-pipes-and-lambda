@@ -1,0 +1,46 @@
+import { Duration } from 'aws-cdk-lib/core';
+
+export type Integration = 'pipe' | 'lambda';
+export type WorkflowKind = 'standard-single' | 'standard-batch' | 'express-single' | 'express-batch';
+export type Invocation = 'async' | 'sync';
+
+export interface ScenarioConfig {
+  /** P1–P4 use EventBridge Pipes, L1–L5 a dispatcher Lambda. */
+  readonly id: string;
+  readonly integration: Integration;
+  readonly workflow: WorkflowKind;
+  /** async: start the execution and move on. sync: wait for the result. */
+  readonly invocation: Invocation;
+  /** Max records per poll from SQS. */
+  readonly batchSize: number;
+  /** How long SQS may wait to fill a batch. */
+  readonly maxBatchingWindow: Duration;
+  /** Must cover the time a message is in flight, or SQS hands it out again. */
+  readonly visibilityTimeout: Duration;
+}
+
+/** Timeout of the dispatcher Lambdas. L3 runs up to 10 executions one after the other. */
+export const DISPATCHER_TIMEOUT = Duration.minutes(1);
+
+// Lambda: AWS recommends 6 x the function timeout.
+const LAMBDA_VISIBILITY = Duration.seconds(DISPATCHER_TIMEOUT.toSeconds() * 6);
+// Pipe async: the pipe only starts the execution.
+const PIPE_ASYNC_VISIBILITY = Duration.minutes(1);
+// Pipe sync: the pipe waits for the Express execution, which runs at most 5 minutes.
+const PIPE_SYNC_VISIBILITY = Duration.minutes(6);
+
+const SINGLE = { batchSize: 1, maxBatchingWindow: Duration.seconds(0) };
+const BATCH = { batchSize: 10, maxBatchingWindow: Duration.seconds(5) };
+
+export const SCENARIOS: readonly ScenarioConfig[] = [
+  { id: 'P1', integration: 'pipe', workflow: 'standard-single', invocation: 'async', ...SINGLE, visibilityTimeout: PIPE_ASYNC_VISIBILITY },
+  { id: 'P2', integration: 'pipe', workflow: 'standard-batch', invocation: 'async', ...BATCH, visibilityTimeout: PIPE_ASYNC_VISIBILITY },
+  { id: 'P3', integration: 'pipe', workflow: 'express-single', invocation: 'sync', ...SINGLE, visibilityTimeout: PIPE_SYNC_VISIBILITY },
+  { id: 'P4', integration: 'pipe', workflow: 'express-batch', invocation: 'sync', ...BATCH, visibilityTimeout: PIPE_SYNC_VISIBILITY },
+  // The dispatcher Lambdas always get a batch. L1, L3 and L4 start one execution per record.
+  { id: 'L1', integration: 'lambda', workflow: 'standard-single', invocation: 'async', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
+  { id: 'L2', integration: 'lambda', workflow: 'standard-batch', invocation: 'async', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
+  { id: 'L3', integration: 'lambda', workflow: 'express-single', invocation: 'sync', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
+  { id: 'L4', integration: 'lambda', workflow: 'express-single', invocation: 'sync', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
+  { id: 'L5', integration: 'lambda', workflow: 'express-batch', invocation: 'sync', ...BATCH, visibilityTimeout: LAMBDA_VISIBILITY },
+];
